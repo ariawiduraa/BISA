@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BISA - Smart Multipurpose Inclusive Learning and Exercise</title>
+    <!-- Modern Sans-Serif Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- SPLASH SCREEN -->
+    <div id="splash-screen" class="screen active-screen">
+        <div class="splash-content">
+            <img src="assets/logo.jpg" alt="BISA Logo" class="splash-logo">
+            <h1 class="splash-title">BISA</h1>
+            <p class="splash-subtitle">Smart Multipurpose Inclusive Learning and Exercise</p>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 8px;">Telerehabilitasi Berbasis Edge-AI untuk Anak Berkebutuhan Khusus</p>
+            <button class="btn-primary" onclick="showScreen('login-screen')" style="margin-top: 24px;">Mulai</button>
+        </div>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="screen">
+        <div class="login-container">
+            <h2>Pilih Peran Anda</h2>
+            <div class="role-cards">
+                <div class="role-card" onclick="selectRole('anak')">
+                    <div class="role-icon">👦</div>
+                    <h3>Pasien Anak</h3>
+                </div>
+                <div class="role-card" onclick="selectRole('terapis')">
+                    <div class="role-icon">👩‍⚕️</div>
+                    <h3>Klinisi / Terapis</h3>
+                </div>
+            </div>
+            <div id="name-input-container" class="name-input-container">
+                <input type="text" id="user-name" placeholder="Masukkan nama..." class="input-field">
+                <button class="btn-primary" onclick="login()">Masuk</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHILD MENU SCREEN -->
+    <div id="child-menu-screen" class="screen">
+        <header class="top-nav">
+            <div class="brand">
+                <img src="assets/logo.jpg" alt="BISA Logo" class="brand-logo">
+                <h1 class="brand-name">BISA</h1>
+            </div>
+            <div class="score-pill">
+                <span class="score-label">Skor Terapi:</span>
+                <span class="score-value" id="child-menu-score">150</span>
+            </div>
+        </header>
+        <div class="menu-container">
+            <h2 class="welcome-text">Halo, <span id="welcome-name">Sahabat</span>! 👋<br>Mau latihan terapi apa hari ini?</h2>
+            <div class="menu-cards">
+                <div class="menu-card" onclick="showScreen('game-list-screen')">
+                    <div class="menu-icon">🎮</div>
+                    <h3>Modul Terapi Interaktif</h3>
+                    <p>Latih motorik & kognitif dengan AI!</p>
+                </div>
+                <div class="menu-card" onclick="showScreen('video-list-screen')">
+                    <div class="menu-icon">📺</div>
+                    <h3>Stimulasi Kognitif</h3>
+                    <p>Video edukatif untuk stimulasi multi-indera</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME LIST SCREEN -->
+    <div id="game-list-screen" class="screen">
+        <header class="top-nav">
+            <button class="btn-back" onclick="showScreen('child-menu-screen')">⬅️ Kembali</button>
+            <div class="brand">
+                <h1 class="brand-name">Modul Terapi</h1>
+            </div>
+        </header>
+        <div class="menu-container">
+            <div class="menu-cards" style="margin-top: 40px;">
+                <div class="menu-card" onclick="showLevelSelect('menunjuk_buah')">
+                    <div class="menu-icon">👆🍎</div>
+                    <h3>Kinestetik Motorik</h3>
+                    <p>Latih koordinasi tangan via kamera!</p>
+                </div>
+                <div class="menu-card" onclick="showLevelSelect('tebak_gambar')">
+                    <div class="menu-icon">🖼️❓</div>
+                    <h3>Kognisi Visual</h3>
+                    <p>Kenali objek dan asah penalaran!</p>
+                </div>
+                <div class="menu-card" onclick="showLevelSelect('tebak_suara')">
+                    <div class="menu-icon">🎵👂</div>
+                    <h3>Kognisi Auditori</h3>
+                    <p>Dengarkan & identifikasi suara!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEVEL SELECT SCREEN -->
+    <div id="level-select-screen" class="screen">
+        <header class="top-nav">
+            <button class="btn-back" onclick="showScreen('game-list-screen')">⬅️ Kembali</button>
+            <div class="brand">
+                <h1 class="brand-name" id="level-select-title">Pilih Level</h1>
+            </div>
+        </header>
+        <div class="menu-container">
+            <div class="level-grid" id="level-grid" style="margin-top: 40px; display: flex; gap: 24px; flex-wrap: wrap; justify-content: center;">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- INSTRUCTION SCREEN -->
+    <div id="instruction-screen" class="screen">
+        <header class="top-nav">
+            <button class="btn-back" onclick="showScreen('level-select-screen')">⬅️ Kembali</button>
+            <div class="brand">
+                <h1 class="brand-name">Cara Bermain</h1>
+            </div>
+        </header>
+        <div class="menu-container" style="justify-content: center;">
+            <div class="instruction-card">
+                <div class="instruction-icon" id="inst-icon">💡</div>
+                <h2 id="inst-title">Judul Game</h2>
+                <p id="inst-desc" style="font-size: 1.25rem; color: var(--text-secondary); margin: 24px 0; max-width: 600px; line-height: 1.6;">Deskripsi cara bermain akan muncul di sini.</p>
+                <button class="btn-primary" onclick="startGame()" style="margin-top: 16px;">Mulai Bermain 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIDEO LIST SCREEN -->
+    <div id="video-list-screen" class="screen">
+        <header class="top-nav">
+            <button class="btn-back" onclick="showScreen('child-menu-screen')">⬅️ Kembali</button>
+            <div class="brand">
+                <h1 class="brand-name">Stimulasi Kognitif Adaptif</h1>
+            </div>
+        </header>
+        <div class="menu-container">
+            <div class="menu-cards" style="margin-top: 40px;">
+                <div class="menu-card" onclick="playVideo('https://www.youtube.com/embed/hq3yfQnllfQ')">
+                    <div class="menu-icon">🔢</div>
+                    <h3>Matematika Dasar</h3>
+                    <p>Belajar berhitung dan angka!</p>
+                </div>
+                <div class="menu-card" onclick="playVideo('https://www.youtube.com/embed/jYMTOMvEomQ')">
+                    <div class="menu-icon">🎨</div>
+                    <h3>Pemilahan Warna</h3>
+                    <p>Mengenal dan membedakan warna!</p>
+                </div>
+                <div class="menu-card" onclick="playVideo('https://www.youtube.com/embed/85M1yxIcHpw')">
+                    <div class="menu-icon">🧠</div>
+                    <h3>Penalaran Sebab-Akibat</h3>
+                    <p>Latihan logika sederhana!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIDEO SCREEN -->
+    <div id="video-screen" class="screen">
+        <header class="top-nav">
+            <button class="btn-back" onclick="stopVideoAndBack()">⬅️ Kembali</button>
+            <div class="brand">
+                <h1 class="brand-name">Video Edukasi</h1>
+            </div>
+        </header>
+        <div class="video-container">
+            <iframe id="youtube-player" width="100%" height="100%" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <!-- THERAPIST MONITORING DASHBOARD -->
+    <div id="therapist-dashboard" class="screen">
+        <header class="top-nav">
+            <button class="btn-back" onclick="showScreen('login-screen')">⬅️ Logout</button>
+            <div class="brand">
+                <img src="assets/logo.jpg" alt="BISA Logo" class="brand-logo">
+                <h1 class="brand-name">BISA — Portal Klinisi</h1>
+            </div>
+        </header>
+
+        <div class="therapist-content">
+            <!-- STATS CARDS -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-icon">👦</div>
+                    <div class="stat-info">
+                        <span class="stat-number">12</span>
+                        <span class="stat-label">Total Pasien</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <span class="stat-number">87</span>
+                        <span class="stat-label">Sesi Terapi Bulan Ini</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <span class="stat-number">72%</span>
+                        <span class="stat-label">Rata-rata Keberhasilan</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-info">
+                        <span class="stat-number">3</span>
+                        <span class="stat-label">Perlu Perhatian</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PATIENT LIST + DETAIL -->
+            <div class="therapist-grid">
+                <!-- LEFT: Patient List -->
+                <div class="patient-list-panel">
+                    <h3 class="panel-title-small">Daftar Pasien</h3>
+                    <div class="patient-list" id="patient-list">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- RIGHT: Patient Detail -->
+                <div class="patient-detail-panel" id="patient-detail-panel">
+                    <div class="detail-placeholder">
+                        <div style="font-size: 4rem;">📋</div>
+                        <p>Pilih pasien dari daftar untuk melihat detail</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP DASHBOARD (GAME) -->
+    <div id="main-app" class="screen app-wrapper">
+        <!-- TOP NAVIGATION BAR -->
+        <header class="top-nav">
+            <button class="btn-back" onclick="stopGame(); showScreen('child-menu-screen');" style="margin-right: 16px;">⬅️ Berhenti</button>
+            <div class="brand">
+                <img src="assets/logo.jpg" alt="BISA Logo" class="brand-logo">
+                <h1 class="brand-name">BISA</h1>
+            </div>
+            <div class="score-pill">
+                <span class="score-label">Skor:</span>
+                <span class="score-value" id="total-score">150</span>
+            </div>
+        </header>
+
+        <!-- MAIN GRID LAYOUT -->
+        <main class="dashboard-grid">
+            
+            <!-- LEFT PANEL: COGNITIVE MODULE -->
+            <section class="panel cognitive-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Modul Kognitif</h2>
+                    <span class="badge badge-mint">Aktif</span>
+                </div>
+                
+                <div class="cognitive-container">
+                    <div class="image-wrapper">
+                        <img id="cognitive-image" src="assets/apple.jpg" alt="Pertanyaan Kognitif" class="cognitive-img">
+                    </div>
+                    <h1 class="cognitive-question" id="cognitive-question">Apa nama buah ini?</h1>
+                    
+                    <div class="cognitive-options" id="cognitive-options">
+                        <!-- Options generated by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT COLUMN: PSYCHOMOTOR & DASHBOARD -->
+            <section class="right-column">
+                
+                <!-- RIGHT TOP: PSYCHOMOTOR MODULE -->
+                <div class="panel psychomotor-panel">
+                    <div class="panel-header-overlay">
+                        <div class="rec-badge">
+                            <span class="rec-dot"></span> REC
+                        </div>
+                    </div>
+                    
+                    <div class="camera-container" id="camera-view">
+                        <!-- Simulated Webcam Feed / Real Feed -->
+                        <video id="camera-feed" autoplay playsinline muted></video>
+                        <!-- MediaPipe Canvas Overlay -->
+                        <canvas id="hand-canvas"></canvas>
+                        
+                        <!-- Falling/Spawned targets -->
+                        <div id="game-targets"></div>
+
+                        <!-- Camera Loading/Status States -->
+                        <div class="camera-status-container" id="camera-status-container">
+                            <div class="spinner" id="camera-spinner"></div>
+                            <p id="camera-status-text">Memuat Kamera & AI...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT BOTTOM: THERAPIST DASHBOARD -->
+                <div class="panel dashboard-panel">
+                    <h3 class="panel-title-small">Dasbor Tele-Monitoring</h3>
+                    
+                    <div class="progress-section">
+                        <div class="progress-bar-group">
+                            <div class="progress-labels">
+                                <span class="progress-label">Progres Kognitif</span>
+                                <span class="progress-value" id="progress-cog-val">0%</span>
+                            </div>
+                            <div class="bar-track">
+                                <div class="bar-fill bg-baby-blue" id="progress-cog-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="progress-bar-group">
+                            <div class="progress-labels">
+                                <span class="progress-label">Progres Motorik</span>
+                                <span class="progress-value" id="progress-mot-val">0%</span>
+                            </div>
+                            <div class="bar-track">
+                                <div class="bar-fill bg-warm-yellow" id="progress-mot-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- SUCCESS MODAL (LEVEL COMPLETE) -->
+    <div id="success-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-icon-container">
+                <div class="modal-icon">🏆</div>
+                <div class="sparkle s1">✨</div>
+                <div class="sparkle s2">✨</div>
+                <div class="sparkle s3">⭐</div>
+            </div>
+            <h2 class="modal-title">Luar Biasa!</h2>
+            <p class="modal-message" id="success-modal-message">Kamu berhasil menyelesaikan Level 1!</p>
+            <div class="modal-stats">
+                <div class="m-stat"><span class="ms-val" id="ms-score">+100</span><span class="ms-lbl">Poin Baru</span></div>
+                <div class="m-stat"><span class="ms-val">100%</span><span class="ms-lbl">Akurasi</span></div>
+            </div>
+            <button class="btn-primary" onclick="closeSuccessModal()">Lanjut Bermain 🚀</button>
+        </div>
+    </div>
+
+    <!-- MediaPipe Hands CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    
+    <script src="app.js"></script>
+</body>
+</html>
