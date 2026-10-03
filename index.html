@@ -22,21 +22,26 @@
 
     <!-- LOGIN SCREEN -->
     <div id="login-screen" class="screen">
+        <div class="login-top-bar">
+            <button id="talkback-btn-login" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan atau Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara, saat ini nonaktif">
+                TalkBack & Suara: Nonaktif
+            </button>
+        </div>
         <div class="login-container">
             <h2>Pilih Peran Anda</h2>
             <div class="role-cards">
-                <div class="role-card" onclick="selectRole('anak')">
+                <div class="role-card" onclick="selectRole('anak')" data-talkback="Pilih peran sebagai Pasien Anak" tabindex="0">
                     <div class="role-icon">👦</div>
                     <h3>Pasien Anak</h3>
                 </div>
-                <div class="role-card" onclick="selectRole('terapis')">
+                <div class="role-card" onclick="selectRole('terapis')" data-talkback="Pilih peran sebagai Klinisi atau Terapis" tabindex="0">
                     <div class="role-icon">👩‍⚕️</div>
                     <h3>Klinisi / Terapis</h3>
                 </div>
             </div>
             <div id="name-input-container" class="name-input-container">
-                <input type="text" id="user-name" placeholder="Masukkan nama..." class="input-field">
-                <button class="btn-primary" onclick="login()">Masuk</button>
+                <input type="text" id="user-name" placeholder="Masukkan nama..." class="input-field" data-talkback="Kolom ketik nama Anda">
+                <button class="btn-primary" onclick="login()" data-talkback="Tombol Masuk">Masuk</button>
             </div>
         </div>
     </div>
@@ -48,20 +53,23 @@
                 <img src="assets/logo.jpg" alt="BISA Logo" class="brand-logo">
                 <h1 class="brand-name">BISA</h1>
             </div>
-            <div class="score-pill">
-                <span class="score-label">Skor Terapi:</span>
-                <span class="score-value" id="child-menu-score">150</span>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button id="talkback-btn-child-menu" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
+                <div class="score-pill">
+                    <span class="score-label">Skor Terapi:</span>
+                    <span class="score-value" id="child-menu-score">150</span>
+                </div>
             </div>
         </header>
         <div class="menu-container">
             <h2 class="welcome-text">Halo, <span id="welcome-name">Sahabat</span>! 👋<br>Mau latihan terapi apa hari ini?</h2>
             <div class="menu-cards">
-                <div class="menu-card" onclick="showScreen('game-list-screen')">
+                <div class="menu-card" onclick="showScreen('game-list-screen')" data-talkback="Buka Modul Terapi Interaktif, latihan motorik dan kognitif dengan AI" tabindex="0">
                     <div class="menu-icon">🎮</div>
                     <h3>Modul Terapi Interaktif</h3>
                     <p>Latih motorik & kognitif dengan AI!</p>
                 </div>
-                <div class="menu-card" onclick="showScreen('video-list-screen')">
+                <div class="menu-card" onclick="showScreen('video-list-screen')" data-talkback="Buka Stimulasi Kognitif, tonton video edukasi multi-indera" tabindex="0">
                     <div class="menu-icon">📺</div>
                     <h3>Stimulasi Kognitif</h3>
                     <p>Video edukatif untuk stimulasi multi-indera</p>
@@ -73,24 +81,25 @@
     <!-- GAME LIST SCREEN -->
     <div id="game-list-screen" class="screen">
         <header class="top-nav">
-            <button class="btn-back" onclick="showScreen('child-menu-screen')">⬅️ Kembali</button>
+            <button class="btn-back" onclick="showScreen('child-menu-screen')" data-talkback="Tombol kembali ke menu utama">← Kembali</button>
             <div class="brand">
                 <h1 class="brand-name">Modul Terapi</h1>
             </div>
+            <button id="talkback-btn-game-list" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
         </header>
         <div class="menu-container">
             <div class="menu-cards" style="margin-top: 40px;">
-                <div class="menu-card" onclick="showLevelSelect('menunjuk_buah')">
+                <div class="menu-card" onclick="showLevelSelect('menunjuk_buah')" data-talkback="Pilih modul Kinestetik Motorik, latih koordinasi tangan via kamera" tabindex="0">
                     <div class="menu-icon">👆🍎</div>
                     <h3>Kinestetik Motorik</h3>
                     <p>Latih koordinasi tangan via kamera!</p>
                 </div>
-                <div class="menu-card" onclick="showLevelSelect('tebak_gambar')">
+                <div class="menu-card" onclick="showLevelSelect('tebak_gambar')" data-talkback="Pilih modul Kognisi Visual, kenali objek dan gambar" tabindex="0">
                     <div class="menu-icon">🖼️❓</div>
                     <h3>Kognisi Visual</h3>
                     <p>Kenali objek dan asah penalaran!</p>
                 </div>
-                <div class="menu-card" onclick="showLevelSelect('tebak_suara')">
+                <div class="menu-card" onclick="showLevelSelect('tebak_suara')" data-talkback="Pilih modul Kognisi Auditori, dengarkan dan tebak suara hewan" tabindex="0">
                     <div class="menu-icon">🎵👂</div>
                     <h3>Kognisi Auditori</h3>
                     <p>Dengarkan & identifikasi suara!</p>
@@ -102,10 +111,11 @@
     <!-- LEVEL SELECT SCREEN -->
     <div id="level-select-screen" class="screen">
         <header class="top-nav">
-            <button class="btn-back" onclick="showScreen('game-list-screen')">⬅️ Kembali</button>
+            <button class="btn-back" onclick="showScreen('game-list-screen')">← Kembali</button>
             <div class="brand">
                 <h1 class="brand-name" id="level-select-title">Pilih Level</h1>
             </div>
+            <button id="talkback-btn-level-select" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
         </header>
         <div class="menu-container">
             <div class="level-grid" id="level-grid" style="margin-top: 40px; display: flex; gap: 24px; flex-wrap: wrap; justify-content: center;">
@@ -117,17 +127,38 @@
     <!-- INSTRUCTION SCREEN -->
     <div id="instruction-screen" class="screen">
         <header class="top-nav">
-            <button class="btn-back" onclick="showScreen('level-select-screen')">⬅️ Kembali</button>
+            <button class="btn-back" onclick="showScreen('level-select-screen')">← Kembali</button>
             <div class="brand">
                 <h1 class="brand-name">Cara Bermain</h1>
             </div>
+            <button id="talkback-btn-instruction" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
         </header>
         <div class="menu-container" style="justify-content: center;">
             <div class="instruction-card">
                 <div class="instruction-icon" id="inst-icon">💡</div>
                 <h2 id="inst-title">Judul Game</h2>
-                <p id="inst-desc" style="font-size: 1.25rem; color: var(--text-secondary); margin: 24px 0; max-width: 600px; line-height: 1.6;">Deskripsi cara bermain akan muncul di sini.</p>
-                <button class="btn-primary" onclick="startGame()" style="margin-top: 16px;">Mulai Bermain 🚀</button>
+                <p id="inst-desc" style="font-size: 1.15rem; color: var(--text-secondary); margin: 16px 0; max-width: 640px; line-height: 1.6;">Deskripsi cara bermain akan muncul di sini.</p>
+                
+                <!-- ANIMATED TUTORIAL CONTAINER -->
+                <div class="tutorial-box" id="tutorial-box">
+                    <div class="tutorial-header">
+                        <span class="tut-badge">Animasi Tutorial</span>
+                        <button class="btn-replay-tut" onclick="replayTutorialAnimation()" title="Putar Ulang Animasi">Putar Ulang</button>
+                    </div>
+                    <div class="tutorial-stage" id="tutorial-stage">
+                        <!-- Filled by JS depending on selectedGame -->
+                    </div>
+                    <div class="tutorial-steps" id="tutorial-steps">
+                        <!-- Step by step guide -->
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+                    <button class="btn-secondary" onclick="speakInstruction()" style="display: inline-flex; align-items: center; gap: 8px;">
+                        Dengarkan Suara
+                    </button>
+                    <button class="btn-primary" onclick="startGame()">Mulai Bermain</button>
+                </div>
             </div>
         </div>
     </div>
@@ -135,10 +166,11 @@
     <!-- VIDEO LIST SCREEN -->
     <div id="video-list-screen" class="screen">
         <header class="top-nav">
-            <button class="btn-back" onclick="showScreen('child-menu-screen')">⬅️ Kembali</button>
+            <button class="btn-back" onclick="showScreen('child-menu-screen')">← Kembali</button>
             <div class="brand">
                 <h1 class="brand-name">Stimulasi Kognitif Adaptif</h1>
             </div>
+            <button id="talkback-btn-video-list" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
         </header>
         <div class="menu-container">
             <div class="menu-cards" style="margin-top: 40px;">
@@ -164,10 +196,11 @@
     <!-- VIDEO SCREEN -->
     <div id="video-screen" class="screen">
         <header class="top-nav">
-            <button class="btn-back" onclick="stopVideoAndBack()">⬅️ Kembali</button>
+            <button class="btn-back" onclick="stopVideoAndBack()">← Kembali</button>
             <div class="brand">
                 <h1 class="brand-name">Video Edukasi</h1>
             </div>
+            <button id="talkback-btn-video-player" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
         </header>
         <div class="video-container">
             <iframe id="youtube-player" width="100%" height="100%" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -177,11 +210,12 @@
     <!-- THERAPIST MONITORING DASHBOARD -->
     <div id="therapist-dashboard" class="screen">
         <header class="top-nav">
-            <button class="btn-back" onclick="showScreen('login-screen')">⬅️ Logout</button>
+            <button class="btn-back" onclick="showScreen('login-screen')">← Keluar</button>
             <div class="brand">
                 <img src="assets/logo.jpg" alt="BISA Logo" class="brand-logo">
                 <h1 class="brand-name">BISA — Portal Klinisi</h1>
             </div>
+            <button id="talkback-btn-therapist" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
         </header>
 
         <div class="therapist-content">
@@ -242,14 +276,17 @@
     <div id="main-app" class="screen app-wrapper">
         <!-- TOP NAVIGATION BAR -->
         <header class="top-nav">
-            <button class="btn-back" onclick="stopGame(); showScreen('child-menu-screen');" style="margin-right: 16px;">⬅️ Berhenti</button>
+            <button class="btn-back" onclick="stopGame(); showScreen('child-menu-screen');" style="margin-right: 16px;">← Berhenti</button>
             <div class="brand">
                 <img src="assets/logo.jpg" alt="BISA Logo" class="brand-logo">
                 <h1 class="brand-name">BISA</h1>
             </div>
-            <div class="score-pill">
-                <span class="score-label">Skor:</span>
-                <span class="score-value" id="total-score">150</span>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button id="talkback-btn-main-app" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
+                <div class="score-pill">
+                    <span class="score-label">Skor:</span>
+                    <span class="score-value" id="total-score">150</span>
+                </div>
             </div>
         </header>
 
@@ -281,9 +318,12 @@
                 <!-- RIGHT TOP: PSYCHOMOTOR MODULE -->
                 <div class="panel psychomotor-panel">
                     <div class="panel-header-overlay">
-                        <div class="rec-badge">
-                            <span class="rec-dot"></span> REC
+                        <div class="rec-badge" id="camera-status-badge">
+                            <span class="rec-dot" id="camera-dot"></span> <span id="camera-badge-text">REC</span>
                         </div>
+                        <button id="toggle-input-mode-btn" class="mode-switch-btn" onclick="toggleInputMode()" title="Ganti Mode Kamera / Sentuh">
+                            Mode Sentuh & Mouse
+                        </button>
                     </div>
                     
                     <div class="camera-container" id="camera-view">
@@ -299,6 +339,15 @@
                         <div class="camera-status-container" id="camera-status-container">
                             <div class="spinner" id="camera-spinner"></div>
                             <p id="camera-status-text">Memuat Kamera & AI...</p>
+                            <button id="camera-skip-btn" class="btn-secondary" onclick="fallbackToMouseTouch('Beralih ke mode sentuh/mouse')" style="margin-top: 14px; font-size: 0.95rem; padding: 10px 20px;">
+                                Lewati & Gunakan Sentuh / Mouse
+                            </button>
+                        </div>
+
+                        <!-- Helper Guide Toast inside camera -->
+                        <div id="camera-guide-toast" class="camera-guide-toast">
+                            <span id="camera-guide-icon">🖐️</span>
+                            <span id="camera-guide-text">Arahkan tangan atau gerakkan keranjang untuk menangkap buah!</span>
                         </div>
                     </div>
                 </div>
@@ -348,13 +397,19 @@
                 <div class="m-stat"><span class="ms-val" id="ms-score">+100</span><span class="ms-lbl">Poin Baru</span></div>
                 <div class="m-stat"><span class="ms-val">100%</span><span class="ms-lbl">Akurasi</span></div>
             </div>
-            <button class="btn-primary" onclick="closeSuccessModal()">Lanjut Bermain 🚀</button>
+            <button class="btn-primary" onclick="closeSuccessModal()">Lanjut Bermain</button>
         </div>
     </div>
 
-    <!-- MediaPipe Hands CDN -->
+    <!-- UNIVERSAL FLOATING TALKBACK BUTTON (AVAILABLE IN ALL SCREENS) -->
+    <button id="floating-talkback-btn" class="btn-talkback-toggle floating-talkback-pill" onclick="toggleTalkBack()" title="Aktifkan atau Matikan TalkBack & Suara" data-talkback="Tombol cepat TalkBack dan suara, klik untuk menyalakan atau mematikan">
+        TalkBack & Suara: Nonaktif
+    </button>
+
+    <!-- MediaPipe AI Libraries: Camera, Drawing, Pose (Bahu & Lengan), and Hands -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     
     <script src="app.js"></script>

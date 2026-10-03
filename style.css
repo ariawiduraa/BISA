@@ -137,6 +137,64 @@ body {
     box-shadow: var(--shadow-3d-btn-active);
 }
 
+.btn-secondary {
+    background: var(--surface-white);
+    color: var(--text-primary);
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 14px 28px;
+    border: 2px solid var(--color-baby-blue);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-secondary:hover {
+    background: #F0F9FF;
+    border-color: #2563EB;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-secondary:active {
+    transform: translateY(0);
+}
+
+.btn-sound-toggle {
+    background: var(--surface-white);
+    color: var(--text-primary);
+    font-family: var(--font-heading);
+    font-size: 0.92rem;
+    font-weight: 700;
+    padding: 8px 16px;
+    border: 2px solid #E2E8F0;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.btn-sound-toggle:hover {
+    background: #F8FAFC;
+    border-color: var(--color-baby-blue);
+    transform: translateY(-1px);
+}
+
+.btn-sound-toggle.muted {
+    color: var(--text-muted);
+    background: #F1F5F9;
+    border-color: #CBD5E1;
+}
+
 .input-field {
     font-family: var(--font-body);
     font-size: 1.1rem;
@@ -669,24 +727,57 @@ body {
 
 .panel-header-overlay {
     position: absolute;
-    top: 20px;
+    top: 16px;
+    left: 20px;
     right: 20px;
     z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+}
+
+.panel-header-overlay > * {
+    pointer-events: auto;
 }
 
 .rec-badge {
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
     color: var(--surface-white);
     font-family: var(--font-body);
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 700;
-    padding: 6px 16px;
+    padding: 6px 14px;
     border-radius: var(--radius-pill);
     display: flex;
     align-items: center;
     gap: 8px;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.mode-switch-btn {
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: var(--surface-white);
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mode-switch-btn:hover {
+    background: rgba(15, 23, 42, 0.95);
+    border-color: var(--color-mint);
+    transform: translateY(-1px);
 }
 
 .rec-dot {
@@ -706,8 +797,11 @@ body {
     position: relative;
     width: 100%;
     height: 100%;
+    min-height: 420px;
     overflow: hidden;
     border-radius: var(--radius-xl);
+    background: #0F172A;
+    touch-action: none;
 }
 
 #camera-feed {
@@ -735,15 +829,42 @@ body {
 
 .fruit-target {
     position: absolute;
-    font-size: 3rem;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+    font-size: 3.2rem;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.35));
     will-change: transform;
     animation: floatAnim 3s ease-in-out infinite;
+    cursor: pointer;
+    pointer-events: auto;
+    user-select: none;
+    touch-action: manipulation;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes floatAnim {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-15px); }
+.fruit-target:hover {
+    transform: scale(1.25);
+}
+
+.camera-guide-toast {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    color: var(--surface-white);
+    padding: 8px 20px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 5;
+    pointer-events: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    white-space: nowrap;
 }
 
 .camera-status-container {
@@ -828,11 +949,12 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    font-size: 3rem;
-    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
-    z-index: 4;
+    font-size: 3.5rem;
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,0.35));
+    z-index: 6;
     pointer-events: none;
     will-change: transform;
+    transition: transform 0.04s linear;
 }
 
 /* ===== THERAPIST MONITORING DASHBOARD ===== */
@@ -1238,3 +1360,749 @@ body {
     font-size: 0.8rem;
     color: var(--text-muted);
 }
+
+/* ============================================================
+   ANIMATED TUTORIAL SYSTEM
+   ============================================================ */
+.tutorial-box {
+    margin: 16px 0 20px;
+    background: #0F172A;
+    border-radius: var(--radius-lg);
+    border: 2px solid #334155;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+    text-align: left;
+}
+
+.tutorial-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: #1E293B;
+    border-bottom: 1px solid #334155;
+}
+
+.tut-badge {
+    color: #38BDF8;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-replay-tut {
+    background: rgba(255, 255, 255, 0.1);
+    color: #F8FAFC;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-family: var(--font-heading);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-replay-tut:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #38BDF8;
+}
+
+.tutorial-stage {
+    position: relative;
+    width: 100%;
+    height: 190px;
+    background: radial-gradient(circle at center, #1E293B 0%, #0F172A 100%);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Kinestetik Animation Elements */
+.tut-cam-mockup {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.tut-grid-lines {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.tut-target-fruit {
+    position: absolute;
+    font-size: 2.8rem;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+    user-select: none;
+}
+
+.tut-fruit-apple {
+    top: 25%;
+    right: 25%;
+    animation: fruitGlow 2s infinite ease-in-out;
+}
+
+.tut-fruit-banana {
+    top: 60%;
+    left: 18%;
+    font-size: 2.2rem;
+    opacity: 0.7;
+}
+
+.tut-hand-tracker {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+    animation: tutHandGlide 4.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    user-select: none;
+}
+
+.tut-hand-avatar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tut-hand-symbol {
+    font-size: 2.8rem;
+    filter: drop-shadow(0 0 16px rgba(59, 130, 246, 0.85));
+    animation: handWave 2s infinite ease-in-out;
+}
+
+.tut-hand-reticle {
+    position: absolute;
+    width: 58px;
+    height: 58px;
+    border: 2px dashed #34D399;
+    border-radius: 50%;
+    animation: reticleSpin 5s linear infinite;
+}
+
+.tut-basket-symbol {
+    font-size: 2.5rem;
+    margin-top: -12px;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+}
+
+.tut-pose-indicator-badge {
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(52, 211, 153, 0.7);
+    color: #34D399;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    margin-top: 4px;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
+}
+
+.tut-body-skeleton {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 85%;
+    height: 65%;
+    pointer-events: none;
+    opacity: 0.65;
+}
+
+@keyframes handWave {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(14deg) scale(1.08); }
+}
+
+@keyframes reticleSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.tut-score-badge {
+    position: absolute;
+    top: 15%;
+    right: 22%;
+    background: var(--color-mint);
+    color: #FFFFFF;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 0.95rem;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+    opacity: 0;
+    animation: tutScorePopup 4.5s infinite ease-out;
+    pointer-events: none;
+}
+
+@keyframes tutHandGlide {
+    0% {
+        top: 75%;
+        left: 20%;
+        transform: scale(0.9);
+    }
+    35% {
+        top: 28%;
+        left: 68%;
+        transform: scale(1.15);
+    }
+    45% {
+        top: 26%;
+        left: 70%;
+        transform: scale(1.25);
+    }
+    60% {
+        top: 30%;
+        left: 72%;
+        transform: scale(1);
+    }
+    100% {
+        top: 75%;
+        left: 20%;
+        transform: scale(0.9);
+    }
+}
+
+@keyframes tutScorePopup {
+    0%, 35% {
+        opacity: 0;
+        transform: translateY(10px) scale(0.8);
+    }
+    45%, 65% {
+        opacity: 1;
+        transform: translateY(-15px) scale(1.1);
+    }
+    80%, 100% {
+        opacity: 0;
+        transform: translateY(-25px) scale(0.9);
+    }
+}
+
+@keyframes fruitGlow {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.15) rotate(5deg); }
+}
+
+/* Tutorial Cognitive & Auditory Mockups */
+.tut-cog-mockup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    width: 90%;
+    height: 100%;
+}
+
+.tut-cog-card {
+    background: #1E293B;
+    border: 2px solid #334155;
+    border-radius: var(--radius-md);
+    padding: 16px;
+    text-align: center;
+    color: white;
+}
+
+.tut-cog-img {
+    font-size: 3.5rem;
+    animation: fruitGlow 2s infinite ease-in-out;
+}
+
+.tut-cog-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tut-cog-btn {
+    background: #334155;
+    color: white;
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.tut-cog-btn.correct {
+    animation: tutBtnPulse 3s infinite ease-in-out;
+}
+
+@keyframes tutBtnPulse {
+    0%, 30% { background: #334155; border-color: #334155; }
+    40%, 80% { background: #10B981; border-color: #10B981; transform: scale(1.08); }
+    90%, 100% { background: #334155; border-color: #334155; }
+}
+
+/* Tutorial Auditory Mockup */
+.tut-audio-speaker {
+    font-size: 3.5rem;
+    animation: speakerPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes speakerPulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.4)); }
+    50% { transform: scale(1.15); filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.8)); }
+}
+
+/* Tutorial Steps Bar */
+.tutorial-steps {
+    display: flex;
+    background: #131D31;
+    padding: 10px 16px;
+    gap: 12px;
+    justify-content: space-around;
+    border-top: 1px solid #1E293B;
+}
+
+.tut-step-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #CBD5E1;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.tut-step-num {
+    background: #3B82F6;
+    color: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   TALKBACK & ACCESSIBILITY FOCUS HIGHLIGHTS
+   ============================================================ */
+[data-talkback]:focus-visible,
+button:focus-visible,
+.btn-option:focus-visible,
+.role-card:focus-visible,
+.menu-card:focus-visible,
+.level-btn:focus-visible {
+    outline: 3px solid #3B82F6 !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.25) !important;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN (DESKTOP, TABLET, MOBILE)
+   ============================================================ */
+
+/* Tablet & Smaller Desktops (<= 1024px) */
+@media (max-width: 1024px) {
+    body {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+    
+    .screen {
+        height: auto;
+        min-height: 100vh;
+        padding-bottom: 24px;
+    }
+
+    .app-wrapper {
+        height: auto;
+        min-height: 100vh;
+        padding: 16px 20px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .therapist-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .therapist-content {
+        height: auto;
+    }
+}
+
+/* Mobile Devices (<= 768px) */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+    }
+
+    /* Top Nav Mobile */
+    .top-nav {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+        border-radius: var(--radius-lg);
+    }
+
+    .brand {
+        gap: 10px;
+    }
+
+    .brand-logo {
+        width: 36px;
+        height: 36px;
+    }
+
+    .brand-name {
+        font-size: 1.25rem;
+    }
+
+    .score-pill {
+        padding: 8px 16px;
+        gap: 8px;
+    }
+
+    .score-label {
+        font-size: 0.85rem;
+    }
+
+    .score-value {
+        font-size: 1.25rem;
+    }
+
+    .btn-sound-toggle {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    .btn-back {
+        padding: 8px 14px;
+        font-size: 0.9rem;
+    }
+
+    /* Splash Screen Mobile */
+    .splash-logo {
+        width: 90px;
+        height: 90px;
+    }
+
+    .splash-title {
+        font-size: 2.5rem;
+    }
+
+    .splash-subtitle {
+        font-size: 1.1rem;
+    }
+
+    /* Login Screen Mobile */
+    .login-container {
+        padding: 24px 20px;
+        width: 92%;
+    }
+
+    .login-container h2 {
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+    }
+
+    .role-cards {
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .role-card {
+        padding: 18px 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        text-align: left;
+    }
+
+    .role-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0;
+    }
+
+    .role-card h3 {
+        font-size: 1.2rem;
+    }
+
+    /* Child Menu & Game List Mobile */
+    .menu-container {
+        padding: 16px;
+        width: 100%;
+    }
+
+    .welcome-text {
+        font-size: 1.35rem;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .menu-cards {
+        flex-direction: column;
+        gap: 16px;
+        width: 100%;
+    }
+
+    .menu-card {
+        padding: 24px 20px;
+        border-radius: var(--radius-lg);
+    }
+
+    .menu-icon {
+        font-size: 3rem;
+        margin-bottom: 12px;
+    }
+
+    .menu-card h3 {
+        font-size: 1.3rem;
+    }
+
+    .menu-card p {
+        font-size: 0.9rem;
+    }
+
+    /* Instruction Screen Mobile */
+    .instruction-card {
+        padding: 28px 18px;
+        width: 95%;
+        border-radius: var(--radius-lg);
+    }
+
+    .instruction-icon {
+        font-size: 3.5rem;
+        margin-bottom: 12px;
+    }
+
+    .instruction-card h2 {
+        font-size: 1.75rem;
+    }
+
+    .instruction-card p {
+        font-size: 1rem;
+        margin: 12px 0;
+    }
+
+    .tutorial-stage {
+        height: 160px;
+    }
+
+    .tutorial-steps {
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px 12px;
+    }
+
+    .tut-step-item {
+        font-size: 0.8rem;
+    }
+
+    /* Level Select Mobile */
+    .level-btn {
+        width: 72px;
+        height: 72px;
+        font-size: 1.4rem;
+        border-radius: var(--radius-lg);
+    }
+
+    /* Psychomotor & Camera Mobile */
+    .psychomotor-panel {
+        min-height: 380px;
+    }
+
+    .camera-container {
+        min-height: 360px;
+        height: 52vh;
+    }
+
+    .fruit-target {
+        font-size: 2.6rem;
+    }
+
+    .hand-cursor {
+        font-size: 2.8rem;
+    }
+
+    .panel-header-overlay {
+        top: 10px;
+        left: 12px;
+        right: 12px;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .rec-badge, .mode-switch-btn {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+    }
+
+    .camera-guide-toast {
+        bottom: 10px;
+        padding: 6px 14px;
+        font-size: 0.78rem;
+        max-width: 90%;
+        text-align: center;
+        white-space: normal;
+    }
+
+    /* Cognitive Panel Mobile */
+    .cognitive-panel {
+        padding: 16px;
+    }
+
+    .image-wrapper {
+        height: 200px;
+    }
+
+    .cognitive-question {
+        font-size: 1.3rem;
+        margin: 16px 0;
+    }
+
+    .cognitive-options {
+        gap: 12px;
+    }
+
+    .btn-option {
+        padding: 14px 20px;
+        font-size: 1.05rem;
+        min-height: 50px;
+    }
+
+    /* Therapist Dashboard Mobile */
+    .therapist-content {
+        padding: 14px;
+    }
+
+    .stats-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .stat-card {
+        padding: 14px 18px;
+    }
+
+    /* Modals Mobile */
+    .modal-content {
+        padding: 24px 18px;
+        width: 92%;
+    }
+
+    .modal-title {
+        font-size: 1.75rem;
+    }
+
+    .modal-message {
+        font-size: 0.95rem;
+    }
+}
+
+/* Extra Small Devices (<= 480px) */
+@media (max-width: 480px) {
+    .top-nav {
+        padding: 8px 12px;
+    }
+
+    .brand-name {
+        display: none;
+    }
+
+    .btn-primary {
+        padding: 14px 28px;
+        font-size: 1.05rem;
+        width: 100%;
+    }
+
+    .btn-secondary {
+        padding: 12px 20px;
+        font-size: 0.95rem;
+        width: 100%;
+    }
+
+    .camera-container {
+        min-height: 320px;
+        height: 48vh;
+    }
+}
+
+/* ============================================================
+   TALKBACK BUTTONS & FLOATING TOGGLE
+   ============================================================ */
+.login-top-bar {
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+
+.btn-talkback-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    user-select: none;
+    backdrop-filter: blur(8px);
+}
+
+.btn-talkback-toggle:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-talkback-toggle.active {
+    background: rgba(16, 185, 129, 0.22);
+    color: #34D399;
+    border-color: #10B981;
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+}
+
+.floating-talkback-pill {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    background: rgba(15, 23, 42, 0.85);
+}
+
+@media (max-width: 768px) {
+    .floating-talkback-pill {
+        bottom: 16px;
+        right: 16px;
+        font-size: 0.78rem;
+        padding: 6px 11px;
+    }
+}
+

@@ -1,20 +1,28 @@
 // ============================================================
-// SMILE - Main Application Logic
+// BISA - Main Application Logic
 // ============================================================
 
 // --- State Variables ---
 let totalScore = 150;
-let cogProgress = 70;
-let motProgress = 45;
+let cogProgress = 0;
+let motProgress = 0;
 
 let cameraStream = null;
+let poseModel = null;
 let handsModel = null;
+let activeTrackingModel = 'none';
 let animFrameId = null;
 let isProcessingFrame = false;
 let handTrackingReady = false;
 let gameActive = false;
 let levelCompleted = false;
 let currentLevelTarget = 50; // points needed to pass level
+let cameraInitialized = false; // Track if camera was ever initialized
+let inputMode = 'ai'; // 'ai' or 'touch'
+let fruitCollectCount = 0;
+
+let soundEnabled = false; // Default: NONAKTIF (Suara & TalkBack satu fitur)
+let voiceEnabled = false; // Default: NONAKTIF
 
 // Level Progression
 let gameProgress = {
@@ -25,6 +33,325 @@ let gameProgress = {
 
 // Coordinate mapping cache
 let lastHandPosition = { x: 0, y: 0 };
+
+// ============================================================
+// SOUND & INDONESIAN VOICE SYNTHESIS SYSTEM (Web Audio API + TTS)
+// ============================================================
+let audioCtx = null;
+
+function getAudioContext() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    return audioCtx;
+}
+
+// ============================================================
+// UNIFIED SOUND & TALKBACK SYSTEM (Default: NONAKTIF / MATI)
+// ============================================================
+let talkbackEnabled = false;
+let talkbackTimer = null;
+let lastSpokenText = '';
+
+// Unified toggle for Sound & TalkBack
+function toggleTalkBack() {
+    talkbackEnabled = !talkbackEnabled;
+    voiceEnabled = talkbackEnabled;
+    soundEnabled = talkbackEnabled;
+    updateTalkBackUI();
+    
+    if (talkbackEnabled) {
+        sfxClick();
+        forceSpeak('TalkBack dan suara diaktifkan');
+    } else {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        if (currentAudio) currentAudio.pause();
+    }
+}
+
+function toggleSound() {
+    toggleTalkBack();
+}
+
+function updateTalkBackUI() {
+    const buttons = document.querySelectorAll('.btn-talkback-toggle, .btn-sound-toggle');
+    const label = talkbackEnabled ? 'TalkBack & Suara: Aktif' : 'TalkBack & Suara: Nonaktif';
+    buttons.forEach(btn => {
+        btn.textContent = label;
+        btn.setAttribute('aria-pressed', talkbackEnabled ? 'true' : 'false');
+        btn.classList.toggle('active', talkbackEnabled);
+        btn.classList.toggle('muted', !talkbackEnabled);
+        btn.setAttribute('data-talkback', talkbackEnabled ? 'TalkBack dan suara saat ini aktif. Klik untuk mematikan.' : 'TalkBack dan suara saat ini nonaktif. Klik untuk mengaktifkan.');
+    });
+}
+
+// Indonesian Text-to-Speech (TTS) - Only speaks when voiceEnabled & talkbackEnabled are true
+function speak(text, priority = false) {
+    if (!voiceEnabled || !talkbackEnabled || !('speechSynthesis' in window) || !text) return;
+    executeTTS(text, priority);
+}
+
+// Explicit forced speech (used when user manually clicks "Dengarkan Suara" button)
+function forceSpeak(text, priority = true) {
+    if (!('speechSynthesis' in window) || !text) return;
+    executeTTS(text, priority);
+}
+
+function executeTTS(text, priority = false) {
+    try {
+        if (priority) {
+            window.speechSynthesis.cancel();
+        }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'id-ID';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.15; // Friendly and cheerful for kids
+        
+        const voices = window.speechSynthesis.getVoices();
+        const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
+        if (idVoice) utterance.voice = idVoice;
+        
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.warn('TTS error:', e);
+    }
+}
+
+// Pre-load voices for browser
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+    };
+}
+
+function talkback(text) {
+    if (!talkbackEnabled || !voiceEnabled || !text) return;
+    
+    // Clean emojis & extra whitespaces for natural reading
+    const cleanText = text
+        .replace(/[🍎🍌🍉🍇🍓🍊🐶🐱🦆🐰🐮🐔🌙⭐☀️💡🎮📺👩‍⚕️👦🎬🖐️✋🖱️📷🔊🔇🔄🚀⬅️🏆✨🔒←]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+        
+    if (!cleanText || cleanText === lastSpokenText) return;
+
+    clearTimeout(talkbackTimer);
+    talkbackTimer = setTimeout(() => {
+        lastSpokenText = cleanText;
+        playTone(850, 0.03, 'sine', 0.05); // Subtle tactile feedback
+        speak(cleanText, true);
+    }, 120); // 120ms debounce prevents speech pile-up
+}
+
+// Global Hover / Focus Listener for Talkback
+function initTalkBack() {
+    updateTalkBackUI();
+
+    document.addEventListener('mouseover', (e) => {
+        const target = e.target.closest('[data-talkback], .btn-option, .role-card, .menu-card, .level-btn, button, input, .fruit-target');
+        if (!target) return;
+        
+        let label = target.getAttribute('data-talkback');
+        if (!label) {
+            if (target.classList.contains('btn-option')) {
+                label = 'Pilihan: ' + target.textContent;
+            } else if (target.classList.contains('role-card')) {
+                const title = target.querySelector('h3');
+                label = 'Pilih peran: ' + (title ? title.textContent : target.textContent);
+            } else if (target.classList.contains('menu-card')) {
+                const title = target.querySelector('h3');
+                const desc = target.querySelector('p');
+                label = (title ? title.textContent : '') + (desc ? ', ' + desc.textContent : '');
+            } else if (target.classList.contains('level-btn')) {
+                label = target.classList.contains('locked') ? 'Level terkunci' : 'Pilih Level ' + target.textContent;
+            } else if (target.classList.contains('fruit-target')) {
+                const emoji = target.textContent.trim();
+                label = 'Target ' + (fruitNames[emoji] || 'Buah');
+            } else if (target.tagName.toLowerCase() === 'input') {
+                label = target.placeholder || 'Kolom input teks';
+            } else if (target.tagName.toLowerCase() === 'button') {
+                label = target.getAttribute('title') || target.textContent;
+            }
+        }
+        
+        if (label) {
+            talkback(label);
+        }
+    });
+
+    document.addEventListener('focusin', (e) => {
+        const target = e.target.closest('[data-talkback], .btn-option, .role-card, .menu-card, .level-btn, button, input');
+        if (target) {
+            const label = target.getAttribute('data-talkback') || target.textContent;
+            talkback(label);
+        }
+    });
+}
+
+// Speak Fruit with praise
+const fruitNames = {
+    '🍎': 'Apel',
+    '🍌': 'Pisang',
+    '🍉': 'Semangka',
+    '🍇': 'Anggur',
+    '🍓': 'Stroberi',
+    '🍊': 'Jeruk'
+};
+const cheerPhrases = ['Hebat!', 'Pintar!', 'Bagus sekali!', 'Keren!', 'Mantap!'];
+
+function speakFruit(emoji) {
+    if (!voiceEnabled) return;
+    fruitCollectCount++;
+    const name = fruitNames[emoji] || 'Buah';
+    if (fruitCollectCount % 3 === 0) {
+        const cheer = cheerPhrases[Math.floor(Math.random() * cheerPhrases.length)];
+        speak(`${name}! ${cheer}`, true);
+    } else {
+        speak(name, true);
+    }
+}
+
+function speakInstruction() {
+    sfxClick();
+    if (selectedGame === 'menunjuk_buah') {
+        forceSpeak('Kinestetik motorik. Angkat tanganmu di depan kamera atau gunakan mouse dan sentuhan layar untuk menangkap buah-buahan!', true);
+    } else if (selectedGame === 'tebak_gambar') {
+        forceSpeak('Kognisi visual. Perhatikan gambar dengan teliti, lalu pilih jawaban yang paling tepat ya!', true);
+    } else if (selectedGame === 'tebak_suara') {
+        forceSpeak('Kognisi auditori. Pasang telingamu baik-baik, dengarkan suara hewannya lalu tebak hewan apakah itu!', true);
+    }
+}
+
+// Play a simple tone
+function playTone(frequency, duration, type = 'sine', volume = 0.25) {
+    if (!soundEnabled) return;
+    try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+    } catch (e) {
+        // Silently fail if audio not available
+    }
+}
+
+// 🎵 Correct Answer — ascending major arpeggio with sparkle
+function sfxCorrect() {
+    if (!soundEnabled) return;
+    playTone(523.25, 0.12, 'sine', 0.25); // C5
+    setTimeout(() => playTone(659.25, 0.12, 'sine', 0.25), 90); // E5
+    setTimeout(() => playTone(783.99, 0.15, 'sine', 0.25), 180); // G5
+    setTimeout(() => playTone(1046.5, 0.3, 'sine', 0.25), 270); // C6
+}
+
+// ❌ Wrong Answer — gentle friendly boing (child-friendly)
+function sfxWrong() {
+    if (!soundEnabled) return;
+    playTone(330, 0.15, 'triangle', 0.2); // E4
+    setTimeout(() => playTone(247, 0.25, 'sine', 0.18), 120); // B3
+}
+
+// 🍎 Fruit Collected — crisp bubble pop with upward slide
+function sfxCollect() {
+    if (!soundEnabled) return;
+    try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(650, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1350, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.28, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {
+        playTone(980, 0.1, 'sine', 0.2);
+    }
+}
+
+// 🏆 Level Complete — rich victory fanfare
+function sfxLevelComplete() {
+    if (!soundEnabled) return;
+    playTone(523.25, 0.18, 'sine', 0.3); // C5
+    setTimeout(() => playTone(659.25, 0.18, 'sine', 0.3), 130); // E5
+    setTimeout(() => playTone(783.99, 0.18, 'sine', 0.3), 260); // G5
+    setTimeout(() => playTone(1046.5, 0.5, 'sine', 0.35), 390); // C6
+    setTimeout(() => {
+        playTone(1318.5, 0.6, 'sine', 0.3); // E6
+        playTone(1046.5, 0.6, 'triangle', 0.25);
+    }, 550);
+}
+
+// 🔘 Button Click — subtle snappy tick
+function sfxClick() {
+    if (!soundEnabled) return;
+    playTone(720, 0.04, 'sine', 0.12);
+}
+
+// Animal Sound Synthesizer (Cat, Dog, Cow)
+function playAnimalSound(type) {
+    if (!soundEnabled) return;
+    try {
+        const ctx = getAudioContext();
+        if (type === 'cat') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(780, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(420, ctx.currentTime + 0.5);
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.5);
+            speak('Meong! Meong!');
+        } else if (type === 'dog') {
+            [0, 0.18].forEach(delay => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, ctx.currentTime + delay);
+                osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + delay + 0.12);
+                gain.gain.setValueAtTime(0.25, ctx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + 0.12);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + delay);
+                osc.stop(ctx.currentTime + delay + 0.12);
+            });
+            speak('Guk guk!');
+        } else if (type === 'cow') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(130, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(105, ctx.currentTime + 0.8);
+            gain.gain.setValueAtTime(0.35, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.8);
+            speak('Mooooo!');
+        }
+    } catch (e) {
+        console.warn('Animal sound synthesis error:', e);
+    }
+}
 
 // --- Cognitive Game Data ---
 const cognitiveQuestions = [
@@ -50,19 +377,22 @@ const cognitiveQuestions = [
 
 const audioQuestions = [
     {
-        audio: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/Cat_meow.ogg',
+        audio: 'assets/sound/cat.mp3',
+        soundType: 'cat',
         question: 'Suara hewan apakah ini?',
         options: ['🐶 Anjing', '🐱 Kucing', '🦆 Bebek'],
         answer: 1
     },
     {
-        audio: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Dog_barking.ogg',
+        audio: 'assets/sound/dog.mp3',
+        soundType: 'dog',
         question: 'Suara hewan apakah ini?',
         options: ['🐶 Anjing', '🐰 Kelinci', '🐮 Sapi'],
         answer: 0
     },
     {
-        audio: 'https://upload.wikimedia.org/wikipedia/commons/d/d4/Cow_moo.ogg',
+        audio: 'assets/sound/cow.mp3',
+        soundType: 'cow',
         question: 'Suara hewan apakah ini?',
         options: ['🐔 Ayam', '🐱 Kucing', '🐮 Sapi'],
         answer: 2
@@ -82,6 +412,7 @@ function showScreen(screenId) {
 }
 
 function selectRole(role) {
+    sfxClick();
     currentRole = role;
     
     // Update UI selection
@@ -90,8 +421,10 @@ function selectRole(role) {
     
     if (role === 'anak') {
         cards[0].classList.add('selected');
+        speak('Pasien Anak');
     } else {
         cards[1].classList.add('selected');
+        speak('Klinisi atau Terapis');
     }
     
     // Show name input
@@ -99,6 +432,7 @@ function selectRole(role) {
 }
 
 function login() {
+    sfxClick();
     const nameInput = document.getElementById('user-name').value.trim();
     if (!nameInput) {
         alert('Silakan masukkan nama Anda!');
@@ -114,9 +448,11 @@ function login() {
     if (currentRole === 'anak') {
         updateChildMenuScore();
         showScreen('child-menu-screen');
+        speak(`Halo ${nameInput}! Mau latihan terapi apa hari ini?`);
     } else {
         renderPatientList();
         showScreen('therapist-dashboard');
+        speak(`Selamat datang di portal klinisi, ${nameInput}`);
     }
 }
 
@@ -310,6 +646,7 @@ let selectedGame = '';
 let selectedLevel = 1;
 
 function showLevelSelect(gameType) {
+    sfxClick();
     selectedGame = gameType;
     let title = '';
     if (gameType === 'menunjuk_buah') title = 'Menunjuk Buah';
@@ -365,54 +702,241 @@ function showInstructions() {
     if (selectedGame === 'menunjuk_buah') {
         title.textContent = 'Kinestetik Motorik';
         icon.textContent = '👆🍎';
-        desc.innerHTML = `<b>Modul Kinestetik Gamifikasi</b><br><br>Latih keterampilan motorik halus dan koordinasi tangan-matamu! Angkat tanganmu di depan kamera dan arahkan ke buah-buahan yang muncul di layar. Sistem Edge-AI akan mendeteksi gerakan tanganmu secara real-time. Kumpulkan poin sampai 100% untuk naik level!`;
+        desc.innerHTML = `<b>Modul Kinestetik Gamifikasi</b><br><br>Latih keterampilan motorik halus dan koordinasi tangan-matamu! Angkat tanganmu di depan kamera atau gunakan mouse / sentuhan layar untuk menangkap buah-buahan yang muncul di layar. Sistem Edge-AI akan mendeteksi gerakan tanganmu secara real-time. Kumpulkan poin sampai 100% untuk naik level!`;
+        speak('Kinestetik motorik. Angkat tanganmu di depan kamera atau gerakkan keranjang untuk menangkap buah-buahan!');
     } else if (selectedGame === 'tebak_gambar') {
         title.textContent = 'Kognisi Visual';
         icon.textContent = '🖼️❓';
         desc.innerHTML = `<b>Modul Kognisi Adaptif — Visual</b><br><br>Perhatikan gambar yang muncul dengan teliti! Pilih jawaban yang paling tepat dari pilihan di bawahnya. Modul ini melatih kemampuan pengenalan objek dan penalaran sebab-akibat. Jawab dengan benar untuk mengumpulkan poin!`;
+        speak('Kognisi visual. Perhatikan gambar dengan teliti dan pilih jawaban yang benar ya!');
     } else if (selectedGame === 'tebak_suara') {
         title.textContent = 'Kognisi Auditori';
         icon.textContent = '🎵👂';
-        desc.innerHTML = `<b>Modul Kognisi Adaptif — Auditori</b><br><br>Pasang telingamu baik-baik! Tekan tombol <b>🔊 PLAY</b> untuk mendengarkan suara, lalu tebak suara hewan apakah itu. Modul ini melatih stimulasi multi-indera dan daya ingat auditori anak.`;
+        desc.innerHTML = `<b>Modul Kognisi Adaptif — Auditori</b><br><br>Pasang telingamu baik-baik! Tekan tombol <b>🔊 Dengarkan Suara</b> untuk mendengarkan suara, lalu tebak suara hewan apakah itu. Modul ini melatih stimulasi multi-indera dan daya ingat auditori anak.`;
+        speak('Kognisi auditori. Dengarkan suara hewan dengan seksama lalu tebak hewannya ya!');
     }
+    
+    // Render dynamic animated tutorial preview
+    renderTutorialAnimation(selectedGame);
     
     showScreen('instruction-screen');
 }
 
+// ============================================================
+// ANIMATED TUTORIAL PREVIEW SYSTEM
+// ============================================================
+function renderTutorialAnimation(gameType) {
+    const stage = document.getElementById('tutorial-stage');
+    const steps = document.getElementById('tutorial-steps');
+    if (!stage || !steps) return;
+
+    if (gameType === 'menunjuk_buah') {
+        stage.innerHTML = `
+            <div class="tut-cam-mockup">
+                <div class="tut-grid-lines"></div>
+                
+                <!-- Body Silhouette & Shoulder/Arm Wireframe -->
+                <svg class="tut-body-skeleton" viewBox="0 0 300 200" preserveAspectRatio="none">
+                    <line x1="70" y1="150" x2="230" y2="150" stroke="rgba(16, 185, 129, 0.6)" stroke-width="4" stroke-dasharray="4 4" />
+                    <circle cx="150" cy="100" r="24" stroke="rgba(59, 130, 246, 0.4)" stroke-width="2" fill="none" />
+                    <circle cx="70" cy="150" r="7" fill="#10B981" />
+                    <circle cx="230" cy="150" r="7" fill="#10B981" />
+                    <text x="50" y="172" fill="rgba(16, 185, 129, 0.9)" font-size="11" font-weight="700">Bahu Kiri</text>
+                    <text x="210" y="172" fill="rgba(16, 185, 129, 0.9)" font-size="11" font-weight="700">Bahu Kanan</text>
+                </svg>
+
+                <div class="tut-target-fruit tut-fruit-apple">🍎</div>
+                <div class="tut-target-fruit tut-fruit-banana">🍌</div>
+                
+                <!-- Moving Hand & Basket Avatar -->
+                <div class="tut-hand-tracker">
+                    <div class="tut-hand-avatar">
+                        <div class="tut-hand-reticle"></div>
+                        <span class="tut-hand-symbol">✋</span>
+                    </div>
+                    <span class="tut-basket-symbol">🧺</span>
+                    <div class="tut-pose-indicator-badge">✋ Gerakkan Tangan & Lengan</div>
+                </div>
+
+                <div class="tut-score-badge">+10 POIN! ⭐</div>
+            </div>
+        `;
+        steps.innerHTML = `
+            <div class="tut-step-item">
+                <span class="tut-step-num">1</span>
+                <span>Posisikan bahu & tangan di depan kamera</span>
+            </div>
+            <div class="tut-step-item">
+                <span class="tut-step-num">2</span>
+                <span>Gerakkan lengan & tangan untuk mengarahkan keranjang</span>
+            </div>
+            <div class="tut-step-item">
+                <span class="tut-step-num">3</span>
+                <span>Tangkap buah & AI mencatat poin motorikmu!</span>
+            </div>
+        `;
+    } else if (gameType === 'tebak_gambar') {
+        stage.innerHTML = `
+            <div class="tut-cog-mockup">
+                <div class="tut-cog-card">
+                    <div class="tut-cog-img">🍎</div>
+                    <div style="font-weight:700; font-size:0.85rem; margin-top:4px;">Apa nama buah ini?</div>
+                </div>
+                <div class="tut-cog-options">
+                    <div class="tut-cog-btn correct">🍎 Apel ✅ (+20)</div>
+                    <div class="tut-cog-btn">🍊 Jeruk</div>
+                    <div class="tut-cog-btn">🍌 Pisang</div>
+                </div>
+            </div>
+        `;
+        steps.innerHTML = `
+            <div class="tut-step-item">
+                <span class="tut-step-num">1</span>
+                <span>Amati gambar buah</span>
+            </div>
+            <div class="tut-step-item">
+                <span class="tut-step-num">2</span>
+                <span>Pilih nama yang sesuai</span>
+            </div>
+            <div class="tut-step-item">
+                <span class="tut-step-num">3</span>
+                <span>Raih skor kognitif!</span>
+            </div>
+        `;
+    } else if (gameType === 'tebak_suara') {
+        stage.innerHTML = `
+            <div class="tut-cog-mockup">
+                <div class="tut-cog-card" style="min-width: 140px;">
+                    <div class="tut-audio-speaker">🔊</div>
+                    <div style="font-weight:700; font-size:0.85rem; margin-top:4px;">Dengarkan Suara</div>
+                </div>
+                <div class="tut-cog-options">
+                    <div class="tut-cog-btn">🐶 Anjing</div>
+                    <div class="tut-cog-btn correct">🐱 Kucing ✅ (+20)</div>
+                    <div class="tut-cog-btn">🐮 Sapi</div>
+                </div>
+            </div>
+        `;
+        steps.innerHTML = `
+            <div class="tut-step-item">
+                <span class="tut-step-num">1</span>
+                <span>Dengarkan suara hewan</span>
+            </div>
+            <div class="tut-step-item">
+                <span class="tut-step-num">2</span>
+                <span>Tebak hewan apakah itu</span>
+            </div>
+            <div class="tut-step-item">
+                <span class="tut-step-num">3</span>
+                <span>Kumpulkan skor auditori!</span>
+            </div>
+        `;
+    }
+}
+
+function replayTutorialAnimation() {
+    sfxClick();
+    const stage = document.getElementById('tutorial-stage');
+    if (!stage) return;
+    stage.style.opacity = '0';
+    setTimeout(() => {
+        renderTutorialAnimation(selectedGame);
+        stage.style.opacity = '1';
+        speakInstruction();
+    }, 150);
+}
+
 function startGame() {
+    sfxClick();
     showScreen('main-app');
     
-    // Reset game state for new session
+    // Reset session game state
     gameActive = true;
     levelCompleted = false;
     currentQuestionIndex = 0;
+    fruitCollectCount = 0;
     
-    // Initialize Dashboard
+    // Reset active module progress so each level starts at 0%
+    if (selectedGame === 'menunjuk_buah') {
+        motProgress = 0;
+    } else {
+        cogProgress = 0;
+    }
+    
+    // Initialize Dashboard UI
     updateDashboardUI();
     
     // Setup game content based on selected game
     setupGameContent();
     
-    // Only init camera once
-    if (!cameraStream) {
-        initCameraAndAI();
+    // Camera / Psychomotor initialization
+    if (selectedGame === 'menunjuk_buah') {
+        if (!cameraInitialized || !cameraStream) {
+            initCameraAndAI();
+        } else {
+            restartGameLoops();
+        }
     }
+}
+
+// Restart fruit targets and frame processing for re-entering camera game
+function restartGameLoops() {
+    const video = document.getElementById('camera-feed');
+    
+    // Hide camera loading container
+    const statusContainer = document.getElementById('camera-status-container');
+    if (statusContainer) {
+        statusContainer.style.display = 'none';
+    }
+    
+    // Spawn fresh fruits
+    spawnFruitTargets();
+    
+    // Ensure hand cursor and interaction listeners are active
+    setupHandCursor();
+    setupInteractionListeners();
+    updateCameraBadge(inputMode);
+    
+    // Restart frame processing if in AI mode
+    if (!animFrameId && handsModel && cameraStream && video && inputMode === 'ai') {
+        startFrameProcessing(video);
+    }
+    
+    speak('Ayo tangkap buah-buahan yang muncul di layar!', true);
 }
 
 // Cleanup function for stopping game and freeing resources
 function stopGame() {
     gameActive = false;
     
-    // Stop audio if playing
+    // Stop audio & speech
     if (currentAudio) {
         currentAudio.pause();
         currentAudio = null;
+    }
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
     }
     
     // Cancel animation frame loop
     if (animFrameId) {
         cancelAnimationFrame(animFrameId);
         animFrameId = null;
+    }
+    
+    // Clear fruit targets
+    const gameTargets = document.getElementById('game-targets');
+    if (gameTargets) gameTargets.innerHTML = '';
+    
+    // Hide cursor
+    const cursor = document.getElementById('hand-cursor');
+    if (cursor) cursor.style.display = 'none';
+
+    // Clear hand canvas
+    const canvas = document.getElementById('hand-canvas');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     
     // Reset inline grid styles to avoid layout corruption on next game
@@ -437,7 +961,6 @@ function setupGameContent() {
     dashboardGrid.style.gridTemplateColumns = '';
     
     if (selectedGame === 'tebak_suara') {
-        // Only Cognitive Panel + Dashboard
         psychomotorPanel.style.display = 'none';
         dashboardGrid.style.gridTemplateColumns = '60% 40%';
         
@@ -447,14 +970,13 @@ function setupGameContent() {
         loadAudioQuestion(0);
         
     } else if (selectedGame === 'menunjuk_buah') {
-        // Only Psychomotor Panel + Dashboard, Centered and Smaller
         cogPanel.style.display = 'none';
         dashboardGrid.style.gridTemplateColumns = '100%'; 
-        rightColumn.style.maxWidth = '900px';
+        rightColumn.style.maxWidth = '920px';
         rightColumn.style.margin = '0 auto';
+        rightColumn.style.width = '100%';
         
     } else {
-        // Tebak Gambar
         psychomotorPanel.style.display = 'none';
         dashboardGrid.style.gridTemplateColumns = '60% 40%';
         
@@ -470,16 +992,16 @@ let currentAudio = null;
 function loadAudioQuestion(index) {
     const q = audioQuestions[index % audioQuestions.length];
     
-    // Create interactive play button style for image
     const imgWrapper = document.querySelector('.image-wrapper');
     imgWrapper.innerHTML = `
-        <div class="audio-play-btn" onclick="playAudio('${q.audio}')">
+        <div class="audio-play-btn" onclick="playQuestionAudio(${index})">
             <div class="audio-icon">🔊</div>
-            <div class="audio-text">Play</div>
+            <div class="audio-text">Dengarkan Suara</div>
         </div>
     `;
     
     document.getElementById('cognitive-question').textContent = q.question;
+    speak(q.question);
     
     const optionsContainer = document.getElementById('cognitive-options');
     optionsContainer.innerHTML = '';
@@ -488,17 +1010,32 @@ function loadAudioQuestion(index) {
         const btn = document.createElement('button');
         btn.className = 'btn-option';
         btn.textContent = opt;
+        btn.setAttribute('data-talkback', 'Pilihan jawaban: ' + opt);
         btn.onclick = () => checkAudioAnswer(i, index);
         optionsContainer.appendChild(btn);
     });
 }
 
-function playAudio(url) {
-    if (currentAudio) {
-        currentAudio.pause();
+function playQuestionAudio(questionIndex) {
+    const q = audioQuestions[questionIndex % audioQuestions.length];
+    sfxClick();
+    
+    try {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+        }
+        currentAudio = new Audio(q.audio);
+        const playPromise = currentAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch((err) => {
+                console.warn('Audio play error:', err);
+                playAnimalSound(q.soundType || (questionIndex === 0 ? 'cat' : questionIndex === 1 ? 'dog' : 'cow'));
+            });
+        }
+    } catch (e) {
+        playAnimalSound(q.soundType || (questionIndex === 0 ? 'cat' : questionIndex === 1 ? 'dog' : 'cow'));
     }
-    currentAudio = new Audio(url);
-    currentAudio.play().catch(e => console.log('Audio play failed', e));
 }
 
 function checkAudioAnswer(selectedIndex, questionIndex) {
@@ -513,15 +1050,19 @@ function checkAudioAnswer(selectedIndex, questionIndex) {
         buttons[selectedIndex].style.color = 'var(--color-mint)';
         addScore(20, 'cognitive');
         spawnParticles(buttons[selectedIndex]);
+        sfxCorrect();
+        speak('Pintar! Jawabanmu benar!');
     } else {
         buttons[selectedIndex].style.borderColor = 'var(--color-red-alert)';
         buttons[selectedIndex].style.color = 'var(--color-red-alert)';
         buttons[q.answer].style.borderColor = 'var(--color-mint)';
         buttons[q.answer].style.color = 'var(--color-mint)';
+        sfxWrong();
+        speak('Belum tepat, ayo coba lagi!');
     }
     
     setTimeout(() => {
-        loadAudioQuestion(questionIndex + 1);
+        if (!levelCompleted) loadAudioQuestion(questionIndex + 1);
     }, 1500);
 }
 
@@ -531,15 +1072,15 @@ function checkAudioAnswer(selectedIndex, questionIndex) {
 function updateDashboardUI() {
     document.getElementById('total-score').textContent = totalScore;
     
-    document.getElementById('progress-cog-val').textContent = `${cogProgress}%`;
-    document.getElementById('progress-cog-fill').style.width = `${cogProgress}%`;
+    document.getElementById('progress-cog-val').textContent = `${Math.round(cogProgress)}%`;
+    document.getElementById('progress-cog-fill').style.width = `${Math.round(cogProgress)}%`;
     
-    document.getElementById('progress-mot-val').textContent = `${motProgress}%`;
-    document.getElementById('progress-mot-fill').style.width = `${motProgress}%`;
+    document.getElementById('progress-mot-val').textContent = `${Math.round(motProgress)}%`;
+    document.getElementById('progress-mot-fill').style.width = `${Math.round(motProgress)}%`;
 }
 
 function addScore(points, type) {
-    if (!gameActive || levelCompleted) return; // Prevent scoring after level complete
+    if (!gameActive || levelCompleted) return;
     
     totalScore += points;
     if (type === 'cognitive') {
@@ -550,7 +1091,7 @@ function addScore(points, type) {
     updateDashboardUI();
     updateChildMenuScore();
     
-    // Check level up condition (guard against multiple triggers)
+    // Check level up condition
     if (!levelCompleted && (cogProgress >= 100 || motProgress >= 100)) {
         levelCompleted = true;
         gameActive = false;
@@ -564,7 +1105,9 @@ function levelComplete() {
         gameProgress[selectedGame]++;
     }
     
-    // Show Premium Modal instead of alert
+    sfxLevelComplete();
+    speak(`Hore! Luar biasa! Kamu berhasil menyelesaikan Level ${selectedLevel}!`, true);
+    
     document.getElementById('success-modal-message').innerHTML = `Hebat! Kamu berhasil menyelesaikan <b>Level ${selectedLevel}</b> dengan cemerlang!`;
     const modal = document.getElementById('success-modal');
     modal.classList.add('active');
@@ -577,19 +1120,18 @@ function closeSuccessModal() {
 }
 
 // ============================================================
-// COGNITIVE MODULE
+// COGNITIVE MODULE (TEBAK GAMBAR)
 // ============================================================
 function loadCognitiveQuestion(index) {
-    // Use modulo to cycle through questions and prevent out-of-bounds
     const safeIndex = index % cognitiveQuestions.length;
     currentQuestionIndex = safeIndex;
     const q = cognitiveQuestions[safeIndex];
     
-    // Restore image layout if we came from audio
     const imgWrapper = document.querySelector('.image-wrapper');
     imgWrapper.innerHTML = `<img id="cognitive-image" src="${q.image}" alt="Pertanyaan" class="cognitive-img">`;
 
     document.getElementById('cognitive-question').textContent = q.question;
+    speak(q.question);
     
     const optionsContainer = document.getElementById('cognitive-options');
     optionsContainer.innerHTML = '';
@@ -608,32 +1150,33 @@ function checkAnswer(selectedIndex) {
     const optionsContainer = document.getElementById('cognitive-options');
     const buttons = optionsContainer.querySelectorAll('.btn-option');
     
-    // Disable all buttons
     buttons.forEach(btn => btn.disabled = true);
     
     if (selectedIndex === q.answer) {
-        // Correct
         buttons[selectedIndex].style.borderColor = 'var(--color-mint)';
         buttons[selectedIndex].style.color = 'var(--color-mint)';
         addScore(20, 'cognitive');
         spawnParticles(buttons[selectedIndex]);
+        sfxCorrect();
+        speak('Hebat! Jawabanmu benar!');
     } else {
-        // Wrong
         buttons[selectedIndex].style.borderColor = 'var(--color-red-alert)';
         buttons[selectedIndex].style.color = 'var(--color-red-alert)';
         buttons[q.answer].style.borderColor = 'var(--color-mint)';
         buttons[q.answer].style.color = 'var(--color-mint)';
+        sfxWrong();
+        speak('Ayo coba lagi ya!');
     }
     
-    // Next question after delay
     setTimeout(() => {
-        currentQuestionIndex = (currentQuestionIndex + 1) % cognitiveQuestions.length;
-        loadCognitiveQuestion(currentQuestionIndex);
+        if (!levelCompleted) {
+            currentQuestionIndex = (currentQuestionIndex + 1) % cognitiveQuestions.length;
+            loadCognitiveQuestion(currentQuestionIndex);
+        }
     }, 1500);
 }
 
 function spawnParticles(element) {
-    // Simple visual feedback
     element.style.transform = 'scale(1.05)';
     setTimeout(() => {
         element.style.transform = 'translateY(-6px)';
@@ -641,110 +1184,321 @@ function spawnParticles(element) {
 }
 
 // ============================================================
-// PSYCHOMOTOR MODULE (AI & CAMERA)
+// PSYCHOMOTOR MODULE (AI CAMERA & TOUCH/MOUSE)
 // ============================================================
+function setupHandCursor() {
+    let cursor = document.getElementById('hand-cursor');
+    if (!cursor) {
+        cursor = document.createElement('div');
+        cursor.id = 'hand-cursor';
+        cursor.className = 'hand-cursor';
+        cursor.textContent = '🧺';
+        const cameraView = document.getElementById('camera-view');
+        if (cameraView) cameraView.appendChild(cursor);
+    }
+    cursor.style.display = 'block';
+}
+
+function updateCameraBadge(mode) {
+    const badgeText = document.getElementById('camera-badge-text');
+    const dot = document.getElementById('camera-dot');
+    const toggleBtn = document.getElementById('toggle-input-mode-btn');
+    const guideIcon = document.getElementById('camera-guide-icon');
+    const guideText = document.getElementById('camera-guide-text');
+
+    if (mode === 'ai') {
+        if (badgeText) badgeText.textContent = 'AI KAMERA AKTIF';
+        if (dot) {
+            dot.style.background = 'var(--color-mint)';
+            dot.style.animation = 'blink 1.5s infinite';
+        }
+        if (toggleBtn) toggleBtn.innerHTML = 'Mode Sentuh & Mouse';
+        if (guideIcon) guideIcon.textContent = '🖐️';
+        if (guideText) guideText.textContent = 'Arahkan tanganmu di depan kamera untuk menangkap buah!';
+    } else {
+        if (badgeText) badgeText.textContent = 'SENTUH / MOUSE';
+        if (dot) {
+            dot.style.background = 'var(--color-warm-yellow)';
+            dot.style.animation = 'none';
+        }
+        if (toggleBtn) toggleBtn.innerHTML = 'Mode Kamera AI';
+        if (guideIcon) guideIcon.textContent = '🖱️';
+        if (guideText) guideText.textContent = 'Gerakkan keranjang atau sentuh buah untuk menangkapnya!';
+    }
+}
+
+function toggleInputMode() {
+    sfxClick();
+    if (inputMode === 'ai') {
+        inputMode = 'touch';
+        updateCameraBadge('touch');
+        speak('Mode Sentuh dan Mouse aktif!', true);
+    } else {
+        inputMode = 'ai';
+        if (!cameraStream || !cameraInitialized) {
+            initCameraAndAI();
+        } else {
+            updateCameraBadge('ai');
+            const video = document.getElementById('camera-feed');
+            if (video) startFrameProcessing(video);
+            speak('Mode Kamera AI aktif! Arahkan tanganmu.', true);
+        }
+    }
+}
+
 async function initCameraAndAI() {
     const video = document.getElementById('camera-feed');
     const statusContainer = document.getElementById('camera-status-container');
     const statusText = document.getElementById('camera-status-text');
+    const spinner = document.getElementById('camera-spinner');
+
+    if (statusContainer) {
+        statusContainer.style.display = 'flex';
+        statusContainer.style.opacity = '1';
+    }
+    if (spinner) spinner.style.display = 'block';
+    if (statusText) statusText.textContent = 'Meminta akses kamera...';
+
+    // Verify browser mediaDevices support
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn('getUserMedia not supported in this environment');
+        fallbackToMouseTouch('Browser tidak mendukung akses kamera. Menggunakan mode sentuh/mouse.');
+        return;
+    }
 
     try {
-        // 1. Request Camera
-        statusText.textContent = 'Meminta akses kamera...';
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                facingMode: 'user'
-            }
-        });
+        if (!cameraStream) {
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: 'user'
+                },
+                audio: false
+            });
+        }
+        
         video.srcObject = cameraStream;
         
-        // Wait for video to be ready
+        // Wait safely for video metadata
         await new Promise((resolve) => {
+            if (video.readyState >= 2 && video.videoWidth > 0) return resolve();
+            video.onloadeddata = () => resolve();
             video.onloadedmetadata = () => resolve();
-        });
-        
-        video.play();
-
-        // 2. Load MediaPipe Hands
-        statusText.textContent = 'Memuat model AI... (Sekitar 5-10 detik)';
-        handsModel = new window.Hands({
-            locateFile: (file) => {
-                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-            }
+            setTimeout(resolve, 2000);
         });
 
-        handsModel.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 1, // Higher accuracy
-            minDetectionConfidence: 0.6,
-            minTrackingConfidence: 0.6
-        });
-
-        handsModel.onResults(onHandResults);
-
-        // 3. Warm up model
-        if (video.readyState >= 2) {
-            await handsModel.send({ image: video });
+        try {
+            await video.play();
+        } catch (e) {
+            console.warn('Video play note:', e);
         }
 
-        handTrackingReady = true;
-        statusContainer.style.opacity = '0'; // Hide loading
-        setTimeout(() => statusContainer.style.display = 'none', 300);
+        // Initialize MediaPipe Pose (Shoulders, Arms, Hands) or fallback to Hands
+        if (window.Pose) {
+            if (statusText) statusText.textContent = 'Memuat AI Deteksi Bahu & Lengan...';
+            try {
+                poseModel = new window.Pose({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+                });
 
-        // 4. Start Game Loops
+                poseModel.setOptions({
+                    modelComplexity: 0, // Lite model for smooth 60fps tracking
+                    smoothLandmarks: true,
+                    enableSegmentation: false,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+
+                poseModel.onResults(onPoseResults);
+
+                // Warmup frame
+                if (video.readyState >= 2 && video.videoWidth > 0) {
+                    try {
+                        await poseModel.send({ image: video });
+                    } catch (e) {}
+                }
+
+                activeTrackingModel = 'pose';
+                handTrackingReady = true;
+                inputMode = 'ai';
+                updateCameraBadge('ai');
+            } catch (poseErr) {
+                console.warn('Pose init failed, fallback to Hands:', poseErr);
+            }
+        }
+
+        if (!poseModel && window.Hands) {
+            if (statusText) statusText.textContent = 'Memuat AI Deteksi Tangan...';
+            handsModel = new window.Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            });
+
+            handsModel.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 0, // Lite model for smooth 60fps tracking
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            handsModel.onResults(onHandResults);
+
+            // Warmup frame
+            if (video.readyState >= 2 && video.videoWidth > 0) {
+                try {
+                    await handsModel.send({ image: video });
+                } catch (e) {}
+            }
+
+            activeTrackingModel = 'hands';
+            handTrackingReady = true;
+            inputMode = 'ai';
+            updateCameraBadge('ai');
+        }
+
+        if (!poseModel && !handsModel) {
+            console.warn('MediaPipe Pose/Hands not available');
+            handTrackingReady = false;
+            inputMode = 'touch';
+            updateCameraBadge('touch');
+        }
+
+        cameraInitialized = true;
+
+        if (statusContainer) {
+            statusContainer.style.opacity = '0';
+            setTimeout(() => {
+                statusContainer.style.display = 'none';
+            }, 300);
+        }
+
+        // Start loops
         startFrameProcessing(video);
         spawnFruitTargets();
-        
-        // Setup Hand Cursor Element (Basket)
-        const cursor = document.createElement('div');
-        cursor.id = 'hand-cursor';
-        cursor.className = 'hand-cursor';
-        cursor.textContent = '🧺';
-        document.getElementById('camera-view').appendChild(cursor);
+        setupHandCursor();
+        setupInteractionListeners();
 
-        // Fallback for mouse
-        document.getElementById('camera-view').addEventListener('mousemove', moveHandCursorFallback);
+        speak('Ayo arahkan tanganmu ke kamera untuk menangkap buah!', true);
 
     } catch (err) {
         console.warn('Camera/AI init failed:', err);
-        statusText.textContent = 'Gagal mengakses kamera. Menggunakan mode mouse.';
-        document.getElementById('camera-spinner').style.display = 'none';
-        
-        // Enable mouse fallback instantly
-        handTrackingReady = false;
-        const cursor = document.createElement('div');
-        cursor.id = 'hand-cursor';
-        cursor.className = 'hand-cursor';
-        cursor.textContent = '🧺';
-        document.getElementById('camera-view').appendChild(cursor);
-        document.getElementById('camera-view').addEventListener('mousemove', moveHandCursorFallback);
-        spawnFruitTargets();
-        
-        setTimeout(() => statusContainer.style.display = 'none', 2000);
+        fallbackToMouseTouch('Kamera tidak aktif atau izin ditolak. Mode Sentuh & Mouse diaktifkan!');
     }
+}
+
+function fallbackToMouseTouch(message) {
+    const statusContainer = document.getElementById('camera-status-container');
+    const statusText = document.getElementById('camera-status-text');
+    const spinner = document.getElementById('camera-spinner');
+
+    if (spinner) spinner.style.display = 'none';
+    if (statusText) statusText.textContent = message;
+
+    handTrackingReady = false;
+    cameraInitialized = true;
+    inputMode = 'touch';
+    updateCameraBadge('touch');
+
+    spawnFruitTargets();
+    setupHandCursor();
+    setupInteractionListeners();
+
+    setTimeout(() => {
+        if (statusContainer) {
+            statusContainer.style.opacity = '0';
+            setTimeout(() => {
+                statusContainer.style.display = 'none';
+            }, 300);
+        }
+    }, 1200);
+
+    speak('Ayo tangkap buah dengan menggerakkan keranjang atau sentuh layar!', true);
+}
+
+function setupInteractionListeners() {
+    const cameraView = document.getElementById('camera-view');
+    if (!cameraView) return;
+
+    cameraView.removeEventListener('mousemove', onPointerMove);
+    cameraView.removeEventListener('touchmove', onTouchMove);
+    cameraView.removeEventListener('touchstart', onTouchMove);
+
+    cameraView.addEventListener('mousemove', onPointerMove);
+    cameraView.addEventListener('touchmove', onTouchMove, { passive: false });
+    cameraView.addEventListener('touchstart', onTouchMove, { passive: false });
+}
+
+function onPointerMove(e) {
+    if (!gameActive || levelCompleted) return;
+    const cameraView = document.getElementById('camera-view');
+    if (!cameraView) return;
+    const rect = cameraView.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    updateCursorAndCheckCollision(x, y);
+}
+
+function onTouchMove(e) {
+    if (!gameActive || levelCompleted) return;
+    const cameraView = document.getElementById('camera-view');
+    if (!cameraView) return;
+    if (e.touches && e.touches.length > 0) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = cameraView.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        updateCursorAndCheckCollision(x, y);
+    }
+}
+
+function updateCursorAndCheckCollision(x, y) {
+    const cursor = document.getElementById('hand-cursor');
+    if (cursor) {
+        cursor.style.display = 'block';
+        cursor.style.transform = `translate3d(${x - 24}px, ${y - 24}px, 0)`;
+    }
+    lastHandPosition.x = x;
+    lastHandPosition.y = y;
+    checkTargetCollision(x, y);
 }
 
 function startFrameProcessing(video) {
-    async function processLoop() {
-        if (!handsModel || !cameraStream) return;
+    if (animFrameId) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+    }
 
-        if (!isProcessingFrame && video.readyState >= 2) {
+    async function processLoop() {
+        if (!gameActive) return;
+
+        if (inputMode === 'ai' && (poseModel || handsModel) && cameraStream && !isProcessingFrame &&
+            video.readyState >= 2 && video.videoWidth > 0 && !video.paused) {
             isProcessingFrame = true;
             try {
-                await handsModel.send({ image: video });
+                if (poseModel) {
+                    await poseModel.send({ image: video });
+                } else if (handsModel) {
+                    await handsModel.send({ image: video });
+                }
             } catch (e) {
-                // Ignore dropped frames
+                // Ignore dropped frame
             }
             isProcessingFrame = false;
         }
-        animFrameId = requestAnimationFrame(processLoop);
+
+        if (gameActive) {
+            animFrameId = requestAnimationFrame(processLoop);
+        }
     }
+
     animFrameId = requestAnimationFrame(processLoop);
 }
 
-function onHandResults(results) {
+// MediaPipe Pose Results: Bahu, Lengan & Tangan (Clinical Cyber Skeleton)
+function onPoseResults(results) {
+    if (!gameActive || levelCompleted || inputMode !== 'ai') return;
+
     const canvas = document.getElementById('hand-canvas');
     const cameraView = document.getElementById('camera-view');
     if (!canvas || !cameraView) return;
@@ -753,86 +1507,203 @@ function onHandResults(results) {
     const viewWidth = cameraView.clientWidth;
     const viewHeight = cameraView.clientHeight;
 
-    const handCursor = document.getElementById('hand-cursor');
-
-    // --- Object-Fit: Cover Mapping ---
     const video = document.getElementById('camera-feed');
     const vw = video.videoWidth || 640;
     const vh = video.videoHeight || 480;
-    
-    const scale = Math.max(viewWidth / vw, viewHeight / vh);
-    const scaledWidth = vw * scale;
-    const scaledHeight = vh * scale;
-    const offsetX = (scaledWidth - viewWidth) / 2;
-    const offsetY = (scaledHeight - viewHeight) / 2;
 
-    // Align canvas to scaled video dimensions
-    canvas.width = scaledWidth;
-    canvas.height = scaledHeight;
-    canvas.style.width = scaledWidth + 'px';
-    canvas.style.height = scaledHeight + 'px';
-    canvas.style.left = -offsetX + 'px';
-    canvas.style.top = -offsetY + 'px';
+    const scale = Math.max(viewWidth / vw, viewHeight / vh);
+    const scaledWidth = Math.round(vw * scale);
+    const scaledHeight = Math.round(vh * scale);
+    const offsetX = Math.round((scaledWidth - viewWidth) / 2);
+    const offsetY = Math.round((scaledHeight - viewHeight) / 2);
+
+    if (canvas.width !== scaledWidth || canvas.height !== scaledHeight) {
+        canvas.width = scaledWidth;
+        canvas.height = scaledHeight;
+        canvas.style.width = scaledWidth + 'px';
+        canvas.style.height = scaledHeight + 'px';
+        canvas.style.left = -offsetX + 'px';
+        canvas.style.top = -offsetY + 'px';
+    }
+
+    ctx.clearRect(0, 0, scaledWidth, scaledHeight);
+
+    if (results.poseLandmarks && results.poseLandmarks.length > 0) {
+        const lm = results.poseLandmarks;
+
+        // Landmarks indices in MediaPipe Pose:
+        // 11: left_shoulder, 12: right_shoulder
+        // 13: left_elbow,    14: right_elbow
+        // 15: left_wrist,    16: right_wrist
+        // 19: left_index,    20: right_index
+
+        const toScreen = (pt) => {
+            if (!pt) return { x: 0, y: 0, visibility: 0 };
+            const rawX = pt.x * scaledWidth;
+            const rawY = pt.y * scaledHeight;
+            // Mirror X because camera feed has scaleX(-1)
+            return {
+                x: (scaledWidth - rawX) - offsetX,
+                y: rawY - offsetY,
+                visibility: pt.visibility !== undefined ? pt.visibility : 1
+            };
+        };
+
+        const ls = toScreen(lm[11]); // Bahu Kiri
+        const rs = toScreen(lm[12]); // Bahu Kanan
+        const le = toScreen(lm[13]); // Siku Kiri
+        const re = toScreen(lm[14]); // Siku Kanan
+        const lw = toScreen(lm[15]); // Pergelangan Kiri
+        const rw = toScreen(lm[16]); // Pergelangan Kanan
+        const li = lm[19] ? toScreen(lm[19]) : lw; // Jari / Tangan Kiri
+        const ri = lm[20] ? toScreen(lm[20]) : rw; // Jari / Tangan Kanan
+
+        const drawSegment = (p1, p2, color, width) => {
+            if ((p1.visibility || 1) < 0.25 || (p2.visibility || 1) < 0.25) return;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+        };
+
+        const drawJoint = (pt, label, color, radius) => {
+            if ((pt.visibility || 1) < 0.25) return;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.stroke();
+
+            if (label && pt.y > 25) {
+                ctx.font = '700 11px Inter, sans-serif';
+                ctx.fillStyle = '#FFFFFF';
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 4;
+                ctx.fillText(label, pt.x - 14, pt.y - radius - 5);
+            }
+            ctx.restore();
+        };
+
+        // 1. Draw Bahu (Shoulder to Shoulder line)
+        drawSegment(ls, rs, 'rgba(16, 185, 129, 0.95)', 6);
+
+        // 2. Draw Lengan Kiri (Bahu -> Siku -> Pergelangan -> Jari)
+        drawSegment(ls, le, 'rgba(59, 130, 246, 0.85)', 5);
+        drawSegment(le, lw, 'rgba(14, 165, 233, 0.85)', 4.5);
+        drawSegment(lw, li, 'rgba(245, 158, 11, 0.85)', 3.5);
+
+        // 3. Draw Lengan Kanan (Bahu -> Siku -> Pergelangan -> Jari)
+        drawSegment(rs, re, 'rgba(59, 130, 246, 0.85)', 5);
+        drawSegment(re, rw, 'rgba(14, 165, 233, 0.85)', 4.5);
+        drawSegment(rw, ri, 'rgba(245, 158, 11, 0.85)', 3.5);
+
+        // 4. Draw Joint Nodes with clinical labels
+        drawJoint(ls, 'Bahu', '#10B981', 8);
+        drawJoint(rs, 'Bahu', '#10B981', 8);
+        drawJoint(le, 'Siku', '#3B82F6', 7);
+        drawJoint(re, 'Siku', '#3B82F6', 7);
+        drawJoint(lw, 'Tangan', '#F59E0B', 9);
+        drawJoint(rw, 'Tangan', '#F59E0B', 9);
+
+        // 5. Select active hand to drive the fruit-catching basket
+        let activeHand = null;
+        const leftValid = (lw.visibility || 1) > 0.3;
+        const rightValid = (rw.visibility || 1) > 0.3;
+
+        if (leftValid && rightValid) {
+            // Pick hand elevated higher (lower Y in screen coordinate)
+            activeHand = (lw.y < rw.y) ? li : ri;
+        } else if (leftValid) {
+            activeHand = li;
+        } else if (rightValid) {
+            activeHand = ri;
+        }
+
+        if (activeHand) {
+            // Visual target reticle on active hand
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(activeHand.x, activeHand.y, 18, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#F59E0B';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.restore();
+
+            updateCursorAndCheckCollision(activeHand.x, activeHand.y);
+        }
+    }
+}
+
+function onHandResults(results) {
+    if (!gameActive || levelCompleted || inputMode !== 'ai') return;
+
+    const canvas = document.getElementById('hand-canvas');
+    const cameraView = document.getElementById('camera-view');
+    if (!canvas || !cameraView) return;
+
+    const ctx = canvas.getContext('2d');
+    const viewWidth = cameraView.clientWidth;
+    const viewHeight = cameraView.clientHeight;
+
+    const video = document.getElementById('camera-feed');
+    const vw = video.videoWidth || 640;
+    const vh = video.videoHeight || 480;
+
+    const scale = Math.max(viewWidth / vw, viewHeight / vh);
+    const scaledWidth = Math.round(vw * scale);
+    const scaledHeight = Math.round(vh * scale);
+    const offsetX = Math.round((scaledWidth - viewWidth) / 2);
+    const offsetY = Math.round((scaledHeight - viewHeight) / 2);
+
+    // Only update canvas dimensions when changed to prevent expensive 60fps DOM reflows!
+    if (canvas.width !== scaledWidth || canvas.height !== scaledHeight) {
+        canvas.width = scaledWidth;
+        canvas.height = scaledHeight;
+        canvas.style.width = scaledWidth + 'px';
+        canvas.style.height = scaledHeight + 'px';
+        canvas.style.left = -offsetX + 'px';
+        canvas.style.top = -offsetY + 'px';
+    }
 
     ctx.clearRect(0, 0, scaledWidth, scaledHeight);
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         const landmarks = results.multiHandLandmarks[0];
 
-        // Draw Skeleton overlay (Clinical/Cyber look)
+        // Draw Skeleton overlay (Clinical / Cyber look)
         if (window.drawConnectors && window.drawLandmarks) {
             window.drawConnectors(ctx, landmarks, window.HAND_CONNECTIONS, {
-                color: 'rgba(16, 185, 129, 0.8)', // Mint green
+                color: 'rgba(16, 185, 129, 0.85)',
                 lineWidth: 4
             });
             window.drawLandmarks(ctx, landmarks, {
-                color: 'rgba(59, 130, 246, 0.9)', // Baby blue
+                color: 'rgba(59, 130, 246, 0.95)',
                 fillColor: '#FFFFFF',
                 lineWidth: 2,
                 radius: 5
             });
         }
-        
-        // Use Index Finger Tip (8) as the main pointer
+
+        // Use Index Finger Tip (8) as main pointer
         const indexTip = landmarks[8];
         const rawX = indexTip.x * scaledWidth;
         const rawY = indexTip.y * scaledHeight;
 
-        // Visual position on mirrored canvas mapped to container DOM space
+        // Visual position mapped to container space
         const screenX = (scaledWidth - rawX) - offsetX;
         const screenY = rawY - offsetY;
 
-        if (handCursor) {
-            handCursor.style.display = 'block';
-            // Center the basket (3rem ~ 48px, so offset by 24px)
-            handCursor.style.transform = `translate3d(${screenX - 24}px, ${screenY - 24}px, 0)`;
-        }
-
-        lastHandPosition.x = screenX;
-        lastHandPosition.y = screenY;
-
-        checkTargetCollision(screenX, screenY);
-
-    } else {
-        if (handCursor) handCursor.style.display = 'none';
+        updateCursorAndCheckCollision(screenX, screenY);
     }
-}
-
-// Fallback for mouse movement
-function moveHandCursorFallback(e) {
-    if (handTrackingReady) return; // Ignore if AI is active
-    
-    const cursor = document.getElementById('hand-cursor');
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    if (cursor) {
-        cursor.style.display = 'block';
-        cursor.style.transform = `translate3d(${x - 24}px, ${y - 24}px, 0)`;
-    }
-    
-    checkTargetCollision(x, y);
 }
 
 // ============================================================
@@ -840,6 +1711,7 @@ function moveHandCursorFallback(e) {
 // ============================================================
 function spawnFruitTargets() {
     const container = document.getElementById('game-targets');
+    if (!container) return;
     container.innerHTML = '';
 
     const fruits = ['🍎', '🍌', '🍉', '🍇', '🍓', '🍊'];
@@ -850,26 +1722,31 @@ function spawnFruitTargets() {
         fruit.className = 'fruit-target';
         fruit.textContent = fruits[Math.floor(Math.random() * fruits.length)];
         
-        // Random position
-        fruit.style.left = (10 + Math.random() * 80) + '%';
-        fruit.style.top = (10 + Math.random() * 80) + '%';
-        
-        // Random animation delay
+        fruit.style.left = (12 + Math.random() * 74) + '%';
+        fruit.style.top = (15 + Math.random() * 65) + '%';
         fruit.style.animationDelay = (Math.random() * 2) + 's';
+        
+        // Allow direct click / touch
+        fruit.onclick = () => collectTarget(fruit);
+        fruit.ontouchstart = (e) => {
+            e.stopPropagation();
+            collectTarget(fruit);
+        };
         
         container.appendChild(fruit);
     }
 }
 
 function checkTargetCollision(handX, handY) {
-    if (!gameActive || levelCompleted) return; // Don't check collisions if game is over
-    
+    if (!gameActive || levelCompleted) return;
+
     const targets = document.querySelectorAll('.fruit-target');
-    const viewRect = document.getElementById('camera-view').getBoundingClientRect();
+    const cameraView = document.getElementById('camera-view');
+    if (!cameraView) return;
+    const viewRect = cameraView.getBoundingClientRect();
 
     targets.forEach(target => {
         const targetRect = target.getBoundingClientRect();
-        
         const targetCenterX = targetRect.left - viewRect.left + targetRect.width / 2;
         const targetCenterY = targetRect.top - viewRect.top + targetRect.height / 2;
 
@@ -877,40 +1754,61 @@ function checkTargetCollision(handX, handY) {
         const dy = handY - targetCenterY;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        // Generous collision radius (60px)
-        if (distance < 60) {
+        // Generous collision radius (65px)
+        if (distance < 65) {
             collectTarget(target);
         }
     });
 }
 
 function collectTarget(target) {
-    // Prevent double collection
+    if (!target.classList.contains('fruit-target') || !gameActive || levelCompleted) return;
+    
+    const fruitEmoji = target.textContent.trim();
     target.classList.remove('fruit-target');
     
-    // Collection Animation
-    target.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-    target.style.transform = 'scale(1.5)';
+    // SFX + Voice feedback
+    sfxCollect();
+    speakFruit(fruitEmoji);
+    
+    // Animation
+    target.style.transition = 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    target.style.transform = 'scale(1.6)';
     target.style.opacity = '0';
     
     addScore(10, 'motoric');
     
     setTimeout(() => {
         target.remove();
-        // Respawn a new fruit to keep game going
-        respawnSingleFruit();
+        if (gameActive && !levelCompleted) {
+            respawnSingleFruit();
+        }
     }, 300);
 }
 
 function respawnSingleFruit() {
     const container = document.getElementById('game-targets');
-    const fruits = ['🍎', '🍌', '🍉', '🍇', '🍓', '🍊'];
+    if (!container || !gameActive || levelCompleted) return;
     
+    const fruits = ['🍎', '🍌', '🍉', '🍇', '🍓', '🍊'];
     const fruit = document.createElement('div');
     fruit.className = 'fruit-target';
     fruit.textContent = fruits[Math.floor(Math.random() * fruits.length)];
-    fruit.style.left = (10 + Math.random() * 80) + '%';
-    fruit.style.top = (10 + Math.random() * 80) + '%';
+    fruit.style.left = (12 + Math.random() * 74) + '%';
+    fruit.style.top = (15 + Math.random() * 65) + '%';
+    
+    fruit.onclick = () => collectTarget(fruit);
+    fruit.ontouchstart = (e) => {
+        e.stopPropagation();
+        collectTarget(fruit);
+    };
     
     container.appendChild(fruit);
+}
+
+// Initialize TalkBack Accessibility
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTalkBack);
+} else {
+    initTalkBack();
 }
