@@ -784,29 +784,55 @@ function showLevelSelect(gameType) {
 }
 
 const VIDEO_CATALOG = {
-    'https://www.youtube.com/embed/hq3yfQnllfQ': {
+    'https://www.youtube.com/embed/hq3yfQnllfQ?si=zbgrrpyullgBfDJ7': {
         title: 'Matematika Dasar',
-        desc: 'Belajar berhitung dan mengenal angka dengan lagu edukatif dan animasi interaktif!'
+        desc: 'Belajar berhitung dan mengenal angka dengan lagu edukatif dan animasi interaktif!',
+        watchUrl: 'https://www.youtube.com/watch?v=hq3yfQnllfQ'
     },
-    'https://www.youtube.com/embed/zxIpA5nF_LY': {
+    'https://www.youtube.com/embed/zxIpA5nF_LY?si=ImZDP2Pbk-3lkgp2': {
         title: 'Pemilahan Warna',
-        desc: 'Mengenal warna-warni ceria dan melatih fokus visual anak!'
+        desc: 'Mengenal warna-warni ceria dan melatih fokus visual anak!',
+        watchUrl: 'https://www.youtube.com/watch?v=zxIpA5nF_LY'
     },
-    'https://www.youtube.com/embed/85M1yxIcHpw': {
+    'https://www.youtube.com/embed/85M1yxIcHpw?si=3vlqAZVOJPQYHjJI': {
         title: 'Penalaran Sebab-Akibat',
-        desc: 'Latihan logika sederhana dan penalaran kognitif bersama animasi menarik!'
+        desc: 'Latihan logika sederhana dan penalaran kognitif bersama animasi menarik!',
+        watchUrl: 'https://www.youtube.com/watch?v=85M1yxIcHpw'
     }
 };
 
 function playVideo(url, title = 'Video Edukasi') {
-    const meta = VIDEO_CATALOG[url] || { title, desc: 'Video stimulasi pembelajaran adaptif untuk anak.' };
+    let meta = VIDEO_CATALOG[url];
+    if (!meta) {
+        for (const k in VIDEO_CATALOG) {
+            if (url.includes(k) || k.includes(url)) {
+                meta = VIDEO_CATALOG[k];
+                break;
+            }
+        }
+    }
+    if (!meta) {
+        meta = { 
+            title, 
+            desc: 'Video stimulasi pembelajaran adaptif untuk anak.', 
+            watchUrl: url.replace('/embed/', '/watch?v=').split('?')[0] 
+        };
+    }
+
     const titleEl = document.getElementById('video-player-title') || document.querySelector('#video-screen .brand-name');
     if (titleEl) titleEl.textContent = meta.title;
     const descEl = document.getElementById('video-player-desc');
     if (descEl) descEl.textContent = meta.desc;
 
+    const ytLink = document.getElementById('youtube-direct-link');
+    if (ytLink) {
+        ytLink.href = meta.watchUrl || url;
+    }
+
     const player = document.getElementById('youtube-player');
     if (player) {
+        player.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+        player.setAttribute('title', meta.title + ' - YouTube video player');
         player.src = url;
     }
     showScreen('video-screen');

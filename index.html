@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>BISA - Smart Multipurpose Inclusive Learning and Exercise</title>
     <!-- Modern Sans-Serif Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -174,7 +175,7 @@
         </header>
         <div class="menu-container video-list-container">
             <div class="video-grid-cards">
-                <div class="menu-card video-card" onclick="playVideo('https://www.youtube.com/embed/hq3yfQnllfQ', 'Matematika Dasar')" data-talkback="Tonton video edukasi Matematika Dasar, belajar berhitung dan angka" tabindex="0">
+                <div class="menu-card video-card" onclick="playVideo('https://www.youtube.com/embed/hq3yfQnllfQ?si=zbgrrpyullgBfDJ7', 'Matematika Dasar')" data-talkback="Tonton video edukasi Matematika Dasar, belajar berhitung dan angka" tabindex="0">
                     <div class="video-thumb-wrapper">
                         <img src="https://img.youtube.com/vi/hq3yfQnllfQ/mqdefault.jpg" alt="Preview Video Matematika Dasar" class="video-thumb-img">
                         <div class="video-play-badge">▶</div>
@@ -184,7 +185,7 @@
                         <p>Belajar berhitung dan angka!</p>
                     </div>
                 </div>
-                <div class="menu-card video-card" onclick="playVideo('https://www.youtube.com/embed/zxIpA5nF_LY', 'Pemilahan Warna')" data-talkback="Tonton video edukasi Pemilahan Warna, mengenal dan membedakan warna" tabindex="0">
+                <div class="menu-card video-card" onclick="playVideo('https://www.youtube.com/embed/zxIpA5nF_LY?si=ImZDP2Pbk-3lkgp2', 'Pemilahan Warna')" data-talkback="Tonton video edukasi Pemilahan Warna, mengenal dan membedakan warna" tabindex="0">
                     <div class="video-thumb-wrapper">
                         <img src="https://img.youtube.com/vi/zxIpA5nF_LY/mqdefault.jpg" alt="Preview Video Pemilahan Warna" class="video-thumb-img">
                         <div class="video-play-badge">▶</div>
@@ -194,7 +195,7 @@
                         <p>Mengenal dan membedakan warna!</p>
                     </div>
                 </div>
-                <div class="menu-card video-card" onclick="playVideo('https://www.youtube.com/embed/85M1yxIcHpw', 'Penalaran Sebab-Akibat')" data-talkback="Tonton video edukasi Penalaran Sebab-Akibat, latihan logika sederhana" tabindex="0">
+                <div class="menu-card video-card" onclick="playVideo('https://www.youtube.com/embed/85M1yxIcHpw?si=3vlqAZVOJPQYHjJI', 'Penalaran Sebab-Akibat')" data-talkback="Tonton video edukasi Penalaran Sebab-Akibat, latihan logika sederhana" tabindex="0">
                     <div class="video-thumb-wrapper">
                         <img src="https://img.youtube.com/vi/85M1yxIcHpw/mqdefault.jpg" alt="Preview Video Penalaran Sebab-Akibat" class="video-thumb-img">
                         <div class="video-play-badge">▶</div>
@@ -219,10 +220,11 @@
         </header>
         <div class="video-player-area">
             <div class="video-player-frame">
-                <iframe id="youtube-player" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                <iframe id="youtube-player" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
             </div>
             <div class="video-player-footer">
                 <p id="video-player-desc" class="video-desc-text">Video stimulasi pembelajaran adaptif untuk anak.</p>
+                <a id="youtube-direct-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-yt-direct" data-talkback="Buka video ini langsung di situs YouTube">Buka di YouTube</a>
             </div>
         </div>
     </div>
