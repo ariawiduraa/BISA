@@ -23,8 +23,8 @@
     <!-- LOGIN SCREEN -->
     <div id="login-screen" class="screen">
         <div class="login-top-bar">
-            <button id="talkback-btn-login" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan atau Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara, saat ini nonaktif">
-                TalkBack & Suara: Nonaktif
+            <button id="talkback-btn-login" class="btn-talkback-toggle active" onclick="toggleTalkBack()" title="Aktifkan atau Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara, saat ini aktif. Klik untuk mematikan" aria-pressed="true">
+                TalkBack & Suara: Aktif
             </button>
         </div>
         <div class="login-container">
@@ -54,7 +54,7 @@
                 <h1 class="brand-name">BISA</h1>
             </div>
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <button id="talkback-btn-child-menu" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
+                <button id="talkback-btn-child-menu" class="btn-talkback-toggle active" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara, saat ini aktif. Klik untuk mematikan" aria-pressed="true">TalkBack & Suara: Aktif</button>
                 <div class="score-pill">
                     <span class="score-label">Skor Terapi:</span>
                     <span class="score-value" id="child-menu-score">150</span>
@@ -85,7 +85,7 @@
             <div class="brand">
                 <h1 class="brand-name">Modul Terapi</h1>
             </div>
-            <button id="talkback-btn-game-list" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
+            <button id="talkback-btn-game-list" class="btn-talkback-toggle active" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara, saat ini aktif. Klik untuk mematikan" aria-pressed="true">TalkBack & Suara: Aktif</button>
         </header>
         <div class="menu-container">
             <div class="menu-cards" style="margin-top: 40px;">
@@ -115,7 +115,7 @@
             <div class="brand">
                 <h1 class="brand-name" id="level-select-title">Pilih Level</h1>
             </div>
-            <button id="talkback-btn-level-select" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
+            <button id="talkback-btn-level-select" class="btn-talkback-toggle active" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara, saat ini aktif. Klik untuk mematikan" aria-pressed="true">TalkBack & Suara: Aktif</button>
         </header>
         <div class="menu-container">
             <div class="level-grid" id="level-grid" style="margin-top: 40px; display: flex; gap: 24px; flex-wrap: wrap; justify-content: center;">
@@ -131,7 +131,7 @@
             <div class="brand">
                 <h1 class="brand-name">Cara Bermain</h1>
             </div>
-            <button id="talkback-btn-instruction" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
+            <button id="talkback-btn-instruction" class="btn-talkback-toggle active" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara, saat ini aktif. Klik untuk mematikan" aria-pressed="true">TalkBack & Suara: Aktif</button>
         </header>
         <div class="menu-container" style="justify-content: center;">
             <div class="instruction-card">
@@ -168,26 +168,41 @@
         <header class="top-nav">
             <button class="btn-back" onclick="showScreen('child-menu-screen')">← Kembali</button>
             <div class="brand">
-                <h1 class="brand-name">Stimulasi Kognitif Adaptif</h1>
+                <h1 class="brand-name">Stimulasi Kognitif</h1>
             </div>
-            <button id="talkback-btn-video-list" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
+            <button id="talkback-btn-video-list" class="btn-talkback-toggle active" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara, saat ini aktif. Klik untuk mematikan" aria-pressed="true">TalkBack & Suara: Aktif</button>
         </header>
-        <div class="menu-container">
-            <div class="menu-cards" style="margin-top: 40px;">
-                <div class="menu-card" onclick="playVideo('https://www.youtube.com/embed/hq3yfQnllfQ')">
-                    <div class="menu-icon">🔢</div>
-                    <h3>Matematika Dasar</h3>
-                    <p>Belajar berhitung dan angka!</p>
+        <div class="menu-container video-list-container">
+            <div class="video-grid-cards">
+                <div class="menu-card video-card" onclick="playVideo('https://www.youtube.com/embed/hq3yfQnllfQ', 'Matematika Dasar')" data-talkback="Tonton video edukasi Matematika Dasar, belajar berhitung dan angka" tabindex="0">
+                    <div class="video-thumb-wrapper">
+                        <img src="https://img.youtube.com/vi/hq3yfQnllfQ/mqdefault.jpg" alt="Preview Video Matematika Dasar" class="video-thumb-img">
+                        <div class="video-play-badge">▶</div>
+                    </div>
+                    <div class="video-card-body">
+                        <h3>Matematika Dasar</h3>
+                        <p>Belajar berhitung dan angka!</p>
+                    </div>
                 </div>
-                <div class="menu-card" onclick="playVideo('https://www.youtube.com/embed/jYMTOMvEomQ')">
-                    <div class="menu-icon">🎨</div>
-                    <h3>Pemilahan Warna</h3>
-                    <p>Mengenal dan membedakan warna!</p>
+                <div class="menu-card video-card" onclick="playVideo('https://www.youtube.com/embed/zxIpA5nF_LY', 'Pemilahan Warna')" data-talkback="Tonton video edukasi Pemilahan Warna, mengenal dan membedakan warna" tabindex="0">
+                    <div class="video-thumb-wrapper">
+                        <img src="https://img.youtube.com/vi/zxIpA5nF_LY/mqdefault.jpg" alt="Preview Video Pemilahan Warna" class="video-thumb-img">
+                        <div class="video-play-badge">▶</div>
+                    </div>
+                    <div class="video-card-body">
+                        <h3>Pemilahan Warna</h3>
+                        <p>Mengenal dan membedakan warna!</p>
+                    </div>
                 </div>
-                <div class="menu-card" onclick="playVideo('https://www.youtube.com/embed/85M1yxIcHpw')">
-                    <div class="menu-icon">🧠</div>
-                    <h3>Penalaran Sebab-Akibat</h3>
-                    <p>Latihan logika sederhana!</p>
+                <div class="menu-card video-card" onclick="playVideo('https://www.youtube.com/embed/85M1yxIcHpw', 'Penalaran Sebab-Akibat')" data-talkback="Tonton video edukasi Penalaran Sebab-Akibat, latihan logika sederhana" tabindex="0">
+                    <div class="video-thumb-wrapper">
+                        <img src="https://img.youtube.com/vi/85M1yxIcHpw/mqdefault.jpg" alt="Preview Video Penalaran Sebab-Akibat" class="video-thumb-img">
+                        <div class="video-play-badge">▶</div>
+                    </div>
+                    <div class="video-card-body">
+                        <h3>Penalaran Sebab-Akibat</h3>
+                        <p>Latihan logika sederhana!</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -198,12 +213,17 @@
         <header class="top-nav">
             <button class="btn-back" onclick="stopVideoAndBack()">← Kembali</button>
             <div class="brand">
-                <h1 class="brand-name">Video Edukasi</h1>
+                <h1 class="brand-name" id="video-player-title">Video Edukasi</h1>
             </div>
-            <button id="talkback-btn-video-player" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
+            <button id="talkback-btn-video-player" class="btn-talkback-toggle active" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara, saat ini aktif. Klik untuk mematikan" aria-pressed="true">TalkBack & Suara: Aktif</button>
         </header>
-        <div class="video-container">
-            <iframe id="youtube-player" width="100%" height="100%" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        <div class="video-player-area">
+            <div class="video-player-frame">
+                <iframe id="youtube-player" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+            <div class="video-player-footer">
+                <p id="video-player-desc" class="video-desc-text">Video stimulasi pembelajaran adaptif untuk anak.</p>
+            </div>
         </div>
     </div>
 
@@ -215,7 +235,7 @@
                 <img src="assets/logo.jpg" alt="BISA Logo" class="brand-logo">
                 <h1 class="brand-name">BISA — Portal Klinisi</h1>
             </div>
-            <button id="talkback-btn-therapist" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
+            <button id="talkback-btn-therapist" class="btn-talkback-toggle active" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara, saat ini aktif. Klik untuk mematikan" aria-pressed="true">TalkBack & Suara: Aktif</button>
         </header>
 
         <div class="therapist-content">
@@ -282,7 +302,7 @@
                 <h1 class="brand-name">BISA</h1>
             </div>
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <button id="talkback-btn-main-app" class="btn-talkback-toggle" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara">TalkBack & Suara: Nonaktif</button>
+                <button id="talkback-btn-main-app" class="btn-talkback-toggle active" onclick="toggleTalkBack()" title="Aktifkan/Matikan TalkBack & Suara" data-talkback="Pengaturan TalkBack dan suara, saat ini aktif. Klik untuk mematikan" aria-pressed="true">TalkBack & Suara: Aktif</button>
                 <div class="score-pill">
                     <span class="score-label">Skor:</span>
                     <span class="score-value" id="total-score">150</span>
@@ -421,8 +441,8 @@
     </div>
 
     <!-- UNIVERSAL FLOATING TALKBACK BUTTON (AVAILABLE IN ALL SCREENS) -->
-    <button id="floating-talkback-btn" class="btn-talkback-toggle floating-talkback-pill" onclick="toggleTalkBack()" title="Aktifkan atau Matikan TalkBack & Suara" data-talkback="Tombol cepat TalkBack dan suara, klik untuk menyalakan atau mematikan">
-        TalkBack & Suara: Nonaktif
+    <button id="floating-talkback-btn" class="btn-talkback-toggle active floating-talkback-pill" onclick="toggleTalkBack()" title="Aktifkan atau Matikan TalkBack & Suara" data-talkback="Tombol cepat TalkBack dan suara, saat ini aktif. Klik untuk mematikan" aria-pressed="true">
+        TalkBack & Suara: Aktif
     </button>
 
     <!-- MediaPipe AI Libraries: Camera, Drawing, Pose (Bahu & Lengan), and Hands -->

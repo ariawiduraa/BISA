@@ -21,8 +21,8 @@ let cameraInitialized = false; // Track if camera was ever initialized
 let inputMode = 'ai'; // 'ai' or 'touch'
 let fruitCollectCount = 0;
 
-let soundEnabled = false; // Default: NONAKTIF (Suara & TalkBack satu fitur)
-let voiceEnabled = false; // Default: NONAKTIF
+let soundEnabled = true; // Default: AKTIF (Suara & TalkBack satu fitur)
+let voiceEnabled = true; // Default: AKTIF
 
 // Level Progression
 let gameProgress = {
@@ -50,9 +50,9 @@ function getAudioContext() {
 }
 
 // ============================================================
-// UNIFIED SOUND & TALKBACK SYSTEM (Default: NONAKTIF / MATI)
+// UNIFIED SOUND & TALKBACK SYSTEM (Default: AKTIF)
 // ============================================================
-let talkbackEnabled = false;
+let talkbackEnabled = true;
 let talkbackTimer = null;
 let lastSpokenText = '';
 
@@ -783,14 +783,44 @@ function showLevelSelect(gameType) {
     showScreen('level-select-screen');
 }
 
-function playVideo(url) {
-    document.getElementById('youtube-player').src = url;
+const VIDEO_CATALOG = {
+    'https://www.youtube.com/embed/hq3yfQnllfQ': {
+        title: 'Matematika Dasar',
+        desc: 'Belajar berhitung dan mengenal angka dengan lagu edukatif dan animasi interaktif!'
+    },
+    'https://www.youtube.com/embed/zxIpA5nF_LY': {
+        title: 'Pemilahan Warna',
+        desc: 'Mengenal warna-warni ceria dan melatih fokus visual anak!'
+    },
+    'https://www.youtube.com/embed/85M1yxIcHpw': {
+        title: 'Penalaran Sebab-Akibat',
+        desc: 'Latihan logika sederhana dan penalaran kognitif bersama animasi menarik!'
+    }
+};
+
+function playVideo(url, title = 'Video Edukasi') {
+    const meta = VIDEO_CATALOG[url] || { title, desc: 'Video stimulasi pembelajaran adaptif untuk anak.' };
+    const titleEl = document.getElementById('video-player-title') || document.querySelector('#video-screen .brand-name');
+    if (titleEl) titleEl.textContent = meta.title;
+    const descEl = document.getElementById('video-player-desc');
+    if (descEl) descEl.textContent = meta.desc;
+
+    const player = document.getElementById('youtube-player');
+    if (player) {
+        player.src = url;
+    }
     showScreen('video-screen');
+    sfxClick();
+    speak('Memutar video ' + meta.title);
 }
 
 function stopVideoAndBack() {
     // Stop video from playing in background by clearing src
-    document.getElementById('youtube-player').src = '';
+    const player = document.getElementById('youtube-player');
+    if (player) {
+        player.src = '';
+    }
+    sfxClick();
     showScreen('video-list-screen');
 }
 
