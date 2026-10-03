@@ -642,6 +642,106 @@ function showPatientDetail(id) {
     `;
 }
 
+// ============================================================
+// BIOMECHANICS & LEVEL TARGET CONFIGURATION (KINESTETIK MOTORIK)
+// ============================================================
+const KINESTETIK_LEVEL_CONFIG = {
+    1: {
+        fruit: '🍎',
+        fruitName: 'Apel',
+        targetCount: 5,
+        targetMinAngle: 75,
+        targetMaxAngle: 110,
+        idealAngle: 90,
+        targetDesc: '🍎 Apel (~90°)',
+        angleInstruction: 'tekuk siku sekitar 90°',
+        title: 'Level 1: Apel & Fleksi Siku 90°'
+    },
+    2: {
+        fruit: '🍌',
+        fruitName: 'Pisang',
+        targetCount: 7,
+        targetMinAngle: 125,
+        targetMaxAngle: 165,
+        idealAngle: 145,
+        targetDesc: '🍌 Pisang (~145°)',
+        angleInstruction: 'luruskan lengan sekitar 145°',
+        title: 'Level 2: Pisang & Ekstensi Lengan 145°'
+    },
+    3: {
+        fruit: '🍉',
+        fruitName: 'Semangka',
+        targetCount: 8,
+        targetMinAngle: 45,
+        targetMaxAngle: 80,
+        idealAngle: 65,
+        targetDesc: '🍉 Semangka (~65°)',
+        angleInstruction: 'tekuk siku rapat sekitar 65°',
+        title: 'Level 3: Semangka & Fleksi Penuh 65°'
+    },
+    4: {
+        fruit: '🍓',
+        fruitName: 'Stroberi',
+        targetCount: 10,
+        targetMinAngle: 85,
+        targetMaxAngle: 125,
+        idealAngle: 105,
+        targetDesc: '🍓 Stroberi (~105°)',
+        angleInstruction: 'tekuk siku seimbang sekitar 105°',
+        title: 'Level 4: Stroberi & Rentang 105°'
+    },
+    5: {
+        fruit: '🍊',
+        fruitName: 'Jeruk',
+        targetCount: 12,
+        targetMinAngle: 110,
+        targetMaxAngle: 155,
+        idealAngle: 130,
+        targetDesc: '🍊 Jeruk (~130°)',
+        angleInstruction: 'rentangkan lengan sekitar 130°',
+        title: 'Level 5: Jeruk & Rentang Penuh 130°'
+    }
+};
+
+let activeArmSide = 'right'; // 'right' or 'left' (Sticky to prevent fluttering)
+let lastGuidanceVoiceTime = 0;
+
+function calculateJointAngle(A, B, C) {
+    if (!A || !B || !C) return 0;
+    const BA = { x: A.x - B.x, y: A.y - B.y };
+    const BC = { x: C.x - B.x, y: C.y - B.y };
+    const dot = (BA.x * BC.x) + (BA.y * BC.y);
+    const magBA = Math.sqrt(BA.x * BA.x + BA.y * BA.y);
+    const magBC = Math.sqrt(BC.x * BC.x + BC.y * BC.y);
+    if (magBA === 0 || magBC === 0) return 0;
+    let cosTheta = dot / (magBA * magBC);
+    cosTheta = Math.max(-1, Math.min(1, cosTheta));
+    return Math.round((Math.acos(cosTheta) * 180) / Math.PI);
+}
+
+function updateBiomechanicsLevelTarget() {
+    const config = KINESTETIK_LEVEL_CONFIG[selectedLevel] || KINESTETIK_LEVEL_CONFIG[1];
+    const lvlNum = document.getElementById('bio-level-num');
+    const targetDesc = document.getElementById('bio-target-desc');
+    if (lvlNum) lvlNum.textContent = selectedLevel;
+    if (targetDesc) targetDesc.textContent = config.targetDesc;
+    updateFruitTargetCounter();
+}
+
+function updateFruitTargetCounter() {
+    const config = KINESTETIK_LEVEL_CONFIG[selectedLevel] || KINESTETIK_LEVEL_CONFIG[1];
+    const targetCount = config.targetCount || 5;
+    const counterEl = document.getElementById('bio-fruit-progress');
+    if (counterEl) {
+        counterEl.textContent = `${fruitCollectCount} / ${targetCount} ${config.fruit}`;
+        if (fruitCollectCount >= targetCount) {
+            counterEl.classList.add('target-reached');
+        } else {
+            counterEl.classList.remove('target-reached');
+        }
+    }
+}
+
 let selectedGame = '';
 let selectedLevel = 1;
 
@@ -700,10 +800,15 @@ function showInstructions() {
     const icon = document.getElementById('inst-icon');
 
     if (selectedGame === 'menunjuk_buah') {
-        title.textContent = 'Kinestetik Motorik';
-        icon.textContent = '👆🍎';
-        desc.innerHTML = `<b>Modul Kinestetik Gamifikasi</b><br><br>Latih keterampilan motorik halus dan koordinasi tangan-matamu! Angkat tanganmu di depan kamera atau gunakan mouse / sentuhan layar untuk menangkap buah-buahan yang muncul di layar. Sistem Edge-AI akan mendeteksi gerakan tanganmu secara real-time. Kumpulkan poin sampai 100% untuk naik level!`;
-        speak('Kinestetik motorik. Angkat tanganmu di depan kamera atau gerakkan keranjang untuk menangkap buah-buahan!');
+        const config = KINESTETIK_LEVEL_CONFIG[selectedLevel] || KINESTETIK_LEVEL_CONFIG[1];
+        title.textContent = `Kinestetik Motorik (Level ${selectedLevel})`;
+        icon.textContent = `${config.fruit}📐`;
+        desc.innerHTML = `<b>Target Level ${selectedLevel}: Buah ${config.fruitName} ${config.fruit} & Biomekanika Siku</b><br><br>
+        Latih gerakan motorik dan fleksibilitas siku Anda! Di Level ${selectedLevel}, fokuslah mencari buah <b>${config.fruitName} ${config.fruit}</b>.<br><br>
+        🎯 <b>Target Ambil:</b> Kumpulkan <b>${config.targetCount} buah ${config.fruitName} ${config.fruit}</b>.<br>
+        📐 <b>Target Siku:</b> Posisikan dan ${config.angleInstruction} (rentang <b>${config.targetMinAngle}° - ${config.targetMaxAngle}°</b>).<br>
+        Sistem AI akan mengukur sudut siku Anda secara real-time dan memberikan instruksi apakah siku perlu ditekuk, diluruskan, dinaikkan, atau diturunkan.`;
+        speak(`Kinestetik motorik level ${selectedLevel}. Target ambil ${config.targetCount} buah ${config.fruitName}, dan ${config.angleInstruction}!`);
     } else if (selectedGame === 'tebak_gambar') {
         title.textContent = 'Kognisi Visual';
         icon.textContent = '🖼️❓';
@@ -731,6 +836,7 @@ function renderTutorialAnimation(gameType) {
     if (!stage || !steps) return;
 
     if (gameType === 'menunjuk_buah') {
+        const config = KINESTETIK_LEVEL_CONFIG[selectedLevel] || KINESTETIK_LEVEL_CONFIG[1];
         stage.innerHTML = `
             <div class="tut-cam-mockup">
                 <div class="tut-grid-lines"></div>
@@ -745,8 +851,8 @@ function renderTutorialAnimation(gameType) {
                     <text x="210" y="172" fill="rgba(16, 185, 129, 0.9)" font-size="11" font-weight="700">Bahu Kanan</text>
                 </svg>
 
-                <div class="tut-target-fruit tut-fruit-apple">🍎</div>
-                <div class="tut-target-fruit tut-fruit-banana">🍌</div>
+                <div class="tut-target-fruit tut-fruit-apple">${config.fruit}</div>
+                <div class="tut-target-fruit tut-fruit-banana">${config.fruit}</div>
                 
                 <!-- Moving Hand & Basket Avatar -->
                 <div class="tut-hand-tracker">
@@ -755,24 +861,24 @@ function renderTutorialAnimation(gameType) {
                         <span class="tut-hand-symbol">✋</span>
                     </div>
                     <span class="tut-basket-symbol">🧺</span>
-                    <div class="tut-pose-indicator-badge">✋ Gerakkan Tangan & Lengan</div>
+                    <div class="tut-pose-indicator-badge">Target: ${config.fruit} (${config.angleInstruction})</div>
                 </div>
 
-                <div class="tut-score-badge">+10 POIN! ⭐</div>
+                <div class="tut-score-badge">+15 POIN! ⭐</div>
             </div>
         `;
         steps.innerHTML = `
             <div class="tut-step-item">
                 <span class="tut-step-num">1</span>
-                <span>Posisikan bahu & tangan di depan kamera</span>
+                <span>Posisikan 1 lengan & tangan aktif di depan kamera</span>
             </div>
             <div class="tut-step-item">
                 <span class="tut-step-num">2</span>
-                <span>Gerakkan lengan & tangan untuk mengarahkan keranjang</span>
+                <span>${config.angleInstruction} sesuai target derajat siku</span>
             </div>
             <div class="tut-step-item">
                 <span class="tut-step-num">3</span>
-                <span>Tangkap buah & AI mencatat poin motorikmu!</span>
+                <span>Ikuti arahan naikkan/turunkan tangan & tangkap buah ${config.fruitName}!</span>
             </div>
         `;
     } else if (gameType === 'tebak_gambar') {
@@ -889,7 +995,10 @@ function restartGameLoops() {
         statusContainer.style.display = 'none';
     }
     
-    // Spawn fresh fruits
+    // Update Biomechanics Level HUD
+    updateBiomechanicsLevelTarget();
+    
+    // Spawn fresh fruits for this level
     spawnFruitTargets();
     
     // Ensure hand cursor and interaction listeners are active
@@ -897,12 +1006,13 @@ function restartGameLoops() {
     setupInteractionListeners();
     updateCameraBadge(inputMode);
     
-    // Restart frame processing if in AI mode
-    if (!animFrameId && handsModel && cameraStream && video && inputMode === 'ai') {
+    // Restart frame processing if in AI mode (supports BOTH poseModel and handsModel)
+    if (cameraStream && video && inputMode === 'ai' && (poseModel || handsModel)) {
         startFrameProcessing(video);
     }
     
-    speak('Ayo tangkap buah-buahan yang muncul di layar!', true);
+    const config = KINESTETIK_LEVEL_CONFIG[selectedLevel] || KINESTETIK_LEVEL_CONFIG[1];
+    speak(`Level ${selectedLevel}. Target: cari buah ${config.fruitName}, dan ${config.angleInstruction}!`, true);
 }
 
 // Cleanup function for stopping game and freeing resources
@@ -1108,15 +1218,35 @@ function levelComplete() {
     sfxLevelComplete();
     speak(`Hore! Luar biasa! Kamu berhasil menyelesaikan Level ${selectedLevel}!`, true);
     
-    document.getElementById('success-modal-message').innerHTML = `Hebat! Kamu berhasil menyelesaikan <b>Level ${selectedLevel}</b> dengan cemerlang!`;
+    if (selectedGame === 'menunjuk_buah') {
+        const config = KINESTETIK_LEVEL_CONFIG[selectedLevel] || KINESTETIK_LEVEL_CONFIG[1];
+        document.getElementById('success-modal-message').innerHTML = `Hebat! Kamu berhasil mengumpulkan semua <b>${config.targetCount} buah ${config.fruitName} ${config.fruit}</b> di Level ${selectedLevel}!`;
+    } else {
+        document.getElementById('success-modal-message').innerHTML = `Hebat! Kamu berhasil menyelesaikan <b>Level ${selectedLevel}</b> dengan cemerlang!`;
+    }
     const modal = document.getElementById('success-modal');
     modal.classList.add('active');
+}
+
+function goToNextLevel() {
+    document.getElementById('success-modal').classList.remove('active');
+    stopGame();
+    if (selectedLevel < 5) {
+        selectedLevel++;
+    } else {
+        selectedLevel = 1;
+    }
+    currentLevelTarget = 30 + (selectedLevel * 20);
+    cogProgress = 0;
+    motProgress = 0;
+    updateDashboardUI();
+    startGame();
 }
 
 function closeSuccessModal() {
     document.getElementById('success-modal').classList.remove('active');
     stopGame();
-    showScreen('game-list-screen'); // Go back to game selection
+    showLevelSelect(selectedGame);
 }
 
 // ============================================================
@@ -1373,12 +1503,14 @@ async function initCameraAndAI() {
         }
 
         // Start loops
+        updateBiomechanicsLevelTarget();
         startFrameProcessing(video);
         spawnFruitTargets();
         setupHandCursor();
         setupInteractionListeners();
 
-        speak('Ayo arahkan tanganmu ke kamera untuk menangkap buah!', true);
+        const config = KINESTETIK_LEVEL_CONFIG[selectedLevel] || KINESTETIK_LEVEL_CONFIG[1];
+        speak(`Level ${selectedLevel}. Target: cari buah ${config.fruitName}, dan ${config.angleInstruction}!`, true);
 
     } catch (err) {
         console.warn('Camera/AI init failed:', err);
@@ -1495,7 +1627,7 @@ function startFrameProcessing(video) {
     animFrameId = requestAnimationFrame(processLoop);
 }
 
-// MediaPipe Pose Results: Bahu, Lengan & Tangan (Clinical Cyber Skeleton)
+// MediaPipe Pose Results: Single Arm Biofeedback & Real-time Biomechanics
 function onPoseResults(results) {
     if (!gameActive || levelCompleted || inputMode !== 'ai') return;
 
@@ -1555,8 +1687,43 @@ function onPoseResults(results) {
         const re = toScreen(lm[14]); // Siku Kanan
         const lw = toScreen(lm[15]); // Pergelangan Kiri
         const rw = toScreen(lm[16]); // Pergelangan Kanan
-        const li = lm[19] ? toScreen(lm[19]) : lw; // Jari / Tangan Kiri
-        const ri = lm[20] ? toScreen(lm[20]) : rw; // Jari / Tangan Kanan
+        const li = lm[19] ? toScreen(lm[19]) : lw; // Jari Kiri
+        const ri = lm[20] ? toScreen(lm[20]) : rw; // Jari Kanan
+
+        // Calculate arm presence / confidence scores
+        const leftScore = ((lm[11]?.visibility ?? 1) + (lm[13]?.visibility ?? 1) + (lm[15]?.visibility ?? 1)) / 3;
+        const rightScore = ((lm[12]?.visibility ?? 1) + (lm[14]?.visibility ?? 1) + (lm[16]?.visibility ?? 1)) / 3;
+
+        // Requirement 2: Strictly select ONLY 1 arm even if user presents both arms
+        if (leftScore > 0.35 && rightScore > 0.35) {
+            // Both arms visible: pick elevated hand (smaller screen Y) with 40px hysteresis to prevent flutter
+            if (activeArmSide === 'right') {
+                if (lw.y < rw.y - 40) {
+                    activeArmSide = 'left';
+                }
+            } else {
+                if (rw.y < lw.y - 40) {
+                    activeArmSide = 'right';
+                }
+            }
+        } else if (leftScore > 0.35) {
+            activeArmSide = 'left';
+        } else if (rightScore > 0.35) {
+            activeArmSide = 'right';
+        }
+
+        // Active arm landmarks
+        const isRight = (activeArmSide === 'right');
+        const shoulder = isRight ? rs : ls;
+        const elbow = isRight ? re : le;
+        const wrist = isRight ? rw : lw;
+        const hand = isRight ? ri : li;
+        const armLabel = isRight ? 'Lengan Kanan' : 'Lengan Kiri';
+
+        // Requirement 4: Real-time Elbow Angle Calculation
+        const elbowAngle = calculateJointAngle(shoulder, elbow, wrist);
+        const config = KINESTETIK_LEVEL_CONFIG[selectedLevel] || KINESTETIK_LEVEL_CONFIG[1];
+        const isInRange = (elbowAngle >= config.targetMinAngle && elbowAngle <= config.targetMaxAngle);
 
         const drawSegment = (p1, p2, color, width) => {
             if ((p1.visibility || 1) < 0.25 || (p2.visibility || 1) < 0.25) return;
@@ -1578,68 +1745,144 @@ function onPoseResults(results) {
             ctx.shadowColor = color;
             ctx.shadowBlur = 10;
             ctx.fill();
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2.5;
             ctx.strokeStyle = '#FFFFFF';
             ctx.stroke();
 
             if (label && pt.y > 25) {
                 ctx.font = '700 11px Inter, sans-serif';
                 ctx.fillStyle = '#FFFFFF';
-                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowColor = 'rgba(0,0,0,0.85)';
                 ctx.shadowBlur = 4;
-                ctx.fillText(label, pt.x - 14, pt.y - radius - 5);
+                ctx.fillText(label, pt.x - 14, pt.y - radius - 6);
             }
             ctx.restore();
         };
 
-        // 1. Draw Bahu (Shoulder to Shoulder line)
-        drawSegment(ls, rs, 'rgba(16, 185, 129, 0.95)', 6);
+        // Draw ONLY the selected arm (Shoulder -> Elbow -> Wrist -> Hand)
+        drawSegment(shoulder, elbow, isInRange ? 'rgba(16, 185, 129, 0.95)' : 'rgba(59, 130, 246, 0.9)', 6.5);
+        drawSegment(elbow, wrist, isInRange ? 'rgba(52, 211, 153, 0.95)' : 'rgba(14, 165, 233, 0.9)', 5);
+        drawSegment(wrist, hand, 'rgba(245, 158, 11, 0.85)', 3.5);
 
-        // 2. Draw Lengan Kiri (Bahu -> Siku -> Pergelangan -> Jari)
-        drawSegment(ls, le, 'rgba(59, 130, 246, 0.85)', 5);
-        drawSegment(le, lw, 'rgba(14, 165, 233, 0.85)', 4.5);
-        drawSegment(lw, li, 'rgba(245, 158, 11, 0.85)', 3.5);
+        // Draw elbow angle arc and degree badge
+        if ((elbow.visibility || 1) > 0.25 && (shoulder.visibility || 1) > 0.25 && (wrist.visibility || 1) > 0.25) {
+            const angleSE = Math.atan2(shoulder.y - elbow.y, shoulder.x - elbow.x);
+            const angleWE = Math.atan2(wrist.y - elbow.y, wrist.x - elbow.x);
 
-        // 3. Draw Lengan Kanan (Bahu -> Siku -> Pergelangan -> Jari)
-        drawSegment(rs, re, 'rgba(59, 130, 246, 0.85)', 5);
-        drawSegment(re, rw, 'rgba(14, 165, 233, 0.85)', 4.5);
-        drawSegment(rw, ri, 'rgba(245, 158, 11, 0.85)', 3.5);
-
-        // 4. Draw Joint Nodes with clinical labels
-        drawJoint(ls, 'Bahu', '#10B981', 8);
-        drawJoint(rs, 'Bahu', '#10B981', 8);
-        drawJoint(le, 'Siku', '#3B82F6', 7);
-        drawJoint(re, 'Siku', '#3B82F6', 7);
-        drawJoint(lw, 'Tangan', '#F59E0B', 9);
-        drawJoint(rw, 'Tangan', '#F59E0B', 9);
-
-        // 5. Select active hand to drive the fruit-catching basket
-        let activeHand = null;
-        const leftValid = (lw.visibility || 1) > 0.3;
-        const rightValid = (rw.visibility || 1) > 0.3;
-
-        if (leftValid && rightValid) {
-            // Pick hand elevated higher (lower Y in screen coordinate)
-            activeHand = (lw.y < rw.y) ? li : ri;
-        } else if (leftValid) {
-            activeHand = li;
-        } else if (rightValid) {
-            activeHand = ri;
-        }
-
-        if (activeHand) {
-            // Visual target reticle on active hand
             ctx.save();
             ctx.beginPath();
-            ctx.arc(activeHand.x, activeHand.y, 18, 0, 2 * Math.PI);
-            ctx.strokeStyle = '#F59E0B';
-            ctx.lineWidth = 2.5;
-            ctx.setLineDash([4, 4]);
+            ctx.arc(elbow.x, elbow.y, 34, angleSE, angleWE, false);
+            ctx.strokeStyle = isInRange ? '#10B981' : '#F59E0B';
+            ctx.lineWidth = 4;
             ctx.stroke();
-            ctx.restore();
 
-            updateCursorAndCheckCollision(activeHand.x, activeHand.y);
+            // Degree badge beside elbow
+            const badgeText = `${elbowAngle}°`;
+            ctx.font = '800 13px Inter, sans-serif';
+            const textWidth = ctx.measureText(badgeText).width;
+            const badgeX = elbow.x + 16;
+            const badgeY = elbow.y - 12;
+
+            ctx.fillStyle = isInRange ? 'rgba(16, 185, 129, 0.95)' : 'rgba(15, 23, 42, 0.88)';
+            ctx.strokeStyle = isInRange ? '#34D399' : '#F59E0B';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(badgeX - 6, badgeY - 14, textWidth + 12, 22, 6);
+            } else {
+                ctx.rect(badgeX - 6, badgeY - 14, textWidth + 12, 22);
+            }
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 3;
+            ctx.fillText(badgeText, badgeX, badgeY + 2);
+            ctx.restore();
         }
+
+        // Draw only the joints of this active arm
+        drawJoint(shoulder, 'Bahu', '#10B981', 8);
+        drawJoint(elbow, `Siku (${armLabel})`, isInRange ? '#10B981' : '#3B82F6', 8);
+        drawJoint(wrist, 'Tangan', '#F59E0B', 9);
+
+        // Visual target reticle on active hand
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(hand.x, hand.y, 22, 0, 2 * Math.PI);
+        ctx.strokeStyle = isInRange ? '#10B981' : '#F59E0B';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.restore();
+
+        // Real-time biomechanics feedback (tekuk/luruskan, naikkan/turunkan)
+        let guideText = '';
+        let guideIcon = '📐';
+        let guideStatus = 'adjust';
+
+        if (elbowAngle > config.targetMaxAngle) {
+            guideText = `Tekuk siku lebih dalam ke ~${config.idealAngle}°! (Saat ini: ${elbowAngle}°)`;
+            guideIcon = '📐';
+            guideStatus = 'adjust';
+        } else if (elbowAngle < config.targetMinAngle) {
+            guideText = `Luruskan siku sedikit ke ~${config.idealAngle}°! (Saat ini: ${elbowAngle}°)`;
+            guideIcon = '📐';
+            guideStatus = 'adjust';
+        } else {
+            // Angle is within ideal target range! Check vertical elevation
+            if (hand.y > viewHeight * 0.65) {
+                guideText = `Sudut pas (${elbowAngle}°)! Naikkan tanganmu lebih tinggi! ⬆️`;
+                guideIcon = '⬆️';
+                guideStatus = 'adjust';
+            } else if (hand.y < viewHeight * 0.22) {
+                guideText = `Sudut pas (${elbowAngle}°)! Turunkan tanganmu sedikit! ⬇️`;
+                guideIcon = '⬇️';
+                guideStatus = 'adjust';
+            } else {
+                guideText = `Posisi Bagus (${elbowAngle}°)! Tangkap buah ${config.fruitName} ${config.fruit}! 🎯`;
+                guideIcon = '🎯';
+                guideStatus = 'good';
+            }
+        }
+
+        // Update DOM HUD elements
+        const angleValEl = document.getElementById('bio-current-angle');
+        if (angleValEl) {
+            angleValEl.textContent = `${elbowAngle}°`;
+            angleValEl.className = `bio-hud-value ${isInRange ? 'angle-good' : 'angle-adjust'}`;
+        }
+
+        const guideToast = document.getElementById('camera-guide-toast');
+        const guideIconEl = document.getElementById('camera-guide-icon');
+        const guideTextEl = document.getElementById('camera-guide-text');
+        if (guideToast && guideIconEl && guideTextEl) {
+            guideIconEl.textContent = guideIcon;
+            guideTextEl.textContent = guideText;
+            guideToast.className = `camera-guide-toast ${guideStatus === 'good' ? 'guide-good' : 'guide-adjust'}`;
+        }
+
+        // Speech biofeedback (throttled)
+        const now = Date.now();
+        if (now - lastGuidanceVoiceTime > 4500 && talkbackEnabled) {
+            if (elbowAngle > config.targetMaxAngle) {
+                speak('Tekuk siku sedikit lagi');
+                lastGuidanceVoiceTime = now;
+            } else if (elbowAngle < config.targetMinAngle) {
+                speak('Luruskan siku sedikit');
+                lastGuidanceVoiceTime = now;
+            } else if (hand.y > viewHeight * 0.65) {
+                speak('Naikkan tangan lebih tinggi');
+                lastGuidanceVoiceTime = now;
+            } else if (guideStatus === 'good') {
+                speak(`Bagus! Tangkap buah ${config.fruitName}!`);
+                lastGuidanceVoiceTime = now;
+            }
+        }
+
+        // Drive hand cursor and collision
+        updateCursorAndCheckCollision(hand.x, hand.y);
     }
 }
 
@@ -1714,13 +1957,14 @@ function spawnFruitTargets() {
     if (!container) return;
     container.innerHTML = '';
 
-    const fruits = ['🍎', '🍌', '🍉', '🍇', '🍓', '🍊'];
+    const config = KINESTETIK_LEVEL_CONFIG[selectedLevel] || KINESTETIK_LEVEL_CONFIG[1];
+    const targetFruit = config.fruit; // Level 1: ONLY Apel 🍎, buah lain tidak ada
     const count = 5;
 
     for (let i = 0; i < count; i++) {
         const fruit = document.createElement('div');
         fruit.className = 'fruit-target';
-        fruit.textContent = fruits[Math.floor(Math.random() * fruits.length)];
+        fruit.textContent = targetFruit;
         
         fruit.style.left = (12 + Math.random() * 74) + '%';
         fruit.style.top = (15 + Math.random() * 65) + '%';
@@ -1764,19 +2008,29 @@ function checkTargetCollision(handX, handY) {
 function collectTarget(target) {
     if (!target.classList.contains('fruit-target') || !gameActive || levelCompleted) return;
     
-    const fruitEmoji = target.textContent.trim();
+    const config = KINESTETIK_LEVEL_CONFIG[selectedLevel] || KINESTETIK_LEVEL_CONFIG[1];
+    const targetCount = config.targetCount || 5;
     target.classList.remove('fruit-target');
+    
+    fruitCollectCount++;
+    updateFruitTargetCounter();
     
     // SFX + Voice feedback
     sfxCollect();
-    speakFruit(fruitEmoji);
+    const remaining = targetCount - fruitCollectCount;
+    if (remaining > 0) {
+        speak(`${config.fruitName}! Sisa ${remaining} lagi!`);
+    } else {
+        speak(`${config.fruitName}! Target ${targetCount} buah tercapai!`);
+    }
     
     // Animation
     target.style.transition = 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
     target.style.transform = 'scale(1.6)';
     target.style.opacity = '0';
     
-    addScore(10, 'motoric');
+    const pointsPerFruit = Math.round(100 / targetCount);
+    addScore(pointsPerFruit, 'motoric');
     
     setTimeout(() => {
         target.remove();
@@ -1790,10 +2044,10 @@ function respawnSingleFruit() {
     const container = document.getElementById('game-targets');
     if (!container || !gameActive || levelCompleted) return;
     
-    const fruits = ['🍎', '🍌', '🍉', '🍇', '🍓', '🍊'];
+    const config = KINESTETIK_LEVEL_CONFIG[selectedLevel] || KINESTETIK_LEVEL_CONFIG[1];
     const fruit = document.createElement('div');
     fruit.className = 'fruit-target';
-    fruit.textContent = fruits[Math.floor(Math.random() * fruits.length)];
+    fruit.textContent = config.fruit;
     fruit.style.left = (12 + Math.random() * 74) + '%';
     fruit.style.top = (15 + Math.random() * 65) + '%';
     

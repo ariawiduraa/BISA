@@ -327,6 +327,22 @@
                     </div>
                     
                     <div class="camera-container" id="camera-view">
+                        <!-- Biomechanics HUD: Real-time Elbow Angle & Target Fruit/Degree & Fruit Count -->
+                        <div id="biomechanics-hud" class="biomechanics-hud">
+                            <div class="bio-hud-card">
+                                <span class="bio-hud-label">Sudut Siku:</span>
+                                <span class="bio-hud-value" id="bio-current-angle">--°</span>
+                            </div>
+                            <div class="bio-hud-card">
+                                <span class="bio-hud-label">Target Level <span id="bio-level-num">1</span>:</span>
+                                <span class="bio-hud-value bio-target-text" id="bio-target-desc">🍎 Apel (90°)</span>
+                            </div>
+                            <div class="bio-hud-card" id="bio-fruit-target-card">
+                                <span class="bio-hud-label">Target Ambil:</span>
+                                <span class="bio-hud-value bio-fruit-count" id="bio-fruit-progress">0 / 5 🍎</span>
+                            </div>
+                        </div>
+
                         <!-- Simulated Webcam Feed / Real Feed -->
                         <video id="camera-feed" autoplay playsinline muted></video>
                         <!-- MediaPipe Canvas Overlay -->
@@ -397,7 +413,10 @@
                 <div class="m-stat"><span class="ms-val" id="ms-score">+100</span><span class="ms-lbl">Poin Baru</span></div>
                 <div class="m-stat"><span class="ms-val">100%</span><span class="ms-lbl">Akurasi</span></div>
             </div>
-            <button class="btn-primary" onclick="closeSuccessModal()">Lanjut Bermain</button>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 16px;">
+                <button class="btn-primary" id="btn-modal-next-level" onclick="goToNextLevel()">Lanjut ke Level Berikutnya</button>
+                <button class="btn-secondary" onclick="closeSuccessModal()">Pilih Level Lain</button>
+            </div>
         </div>
     </div>
 
